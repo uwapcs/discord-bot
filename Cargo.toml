@@ -1,0 +1,8 @@
+[package]
+name = "ucc-discord-bot"
+version = "0.1.0"
+authors = ["tec <tec@ucc.gu.uwa.edu.au>"]
+edition = "2018"
+
+[dependencies]
+serenity = "0.6.3"
