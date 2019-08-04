@@ -4,12 +4,11 @@ use serenity::{
     utils::MessageBuilder,
 };
 
-extern crate rand;
-
 use rand::Rng;
 
 struct Handler;
 
+const SERVER_ID: u64 = 606351521117896704;
 // #general
 const MAIN_CHANNEL: serenity::model::id::ChannelId =
     serenity::model::id::ChannelId(606351521117896706);
@@ -19,9 +18,14 @@ const WELCOME_CHANNEL: serenity::model::id::ChannelId =
 
 const BOT_ID: u64 = 607078903969742848;
 
+const VOTE_POOL_SIZE: i8 = 2;
 const VOTE_ROLE: u64 = 607478818038480937;
+const TIEBREAKER_ROLE: u64 = 607509283483025409;
 
-const SERVER_ID: u64 = 606351521117896704;
+const FOR_VOTE: &'static str = "👍";
+const AGAINST_VOTE: &'static str = "👎";
+const ABSTAIN_VOTE: &'static str = "🙊";
+const ALLOWED_REACTS: &'static [&'static str] = &[FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE];
 
 impl EventHandler for Handler {
     // Set a handler for the `message` event - so that whenever a new message
@@ -52,10 +56,9 @@ impl EventHandler for Handler {
             let topic = iter.as_str();
             create_motion(&ctx, &msg, topic);
         } else if msg.content.starts_with("!motion") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(7);
-            let topic = iter.as_str();
-            create_motion(&ctx, &msg, topic);
+            if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
+                println!("Error sending message: {:?}", why);
+            }
         } else if msg.content == "!help" {
             let mut message = MessageBuilder::new();
             message.push("Use !move <action> to make a circular motion");
@@ -68,20 +71,33 @@ impl EventHandler for Handler {
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(mut message) => {
-                println!("{:#?}", message.embeds[0]);
                 if message.author.id.0 == BOT_ID {
                     if let Ok(user) = add_reaction.user(&ctx) {
                         match user.has_role(&ctx, SERVER_ID, VOTE_ROLE) {
                             Ok(true) => {
-                                // for reaction in message.reactions {
-                                //     // FIXME: this isn't right
-                                //     if reaction.me {
-                                //         if let Err(why) = add_reaction.delete(&ctx) {
-                                //             println!("Error deleting react: {:?}", why);
-                                //         };
-                                //     }
-                                // }
-                                updateMotion(&ctx, &mut message, &user);
+                                for react in [FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE]
+                                    .iter()
+                                    .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
+                                {
+                                    for a_user in
+                                        message.reaction_users(&ctx, *react, None, None).unwrap()
+                                    {
+                                        if a_user.id.0 == user.id.0 {
+                                            if let Err(why) = add_reaction.delete(&ctx) {
+                                                println!("Error deleting react: {:?}", why);
+                                            };
+                                        }
+                                    }
+                                }
+                                if !ALLOWED_REACTS.contains(&add_reaction.emoji.as_data().as_str())
+                                {
+                                    if let Err(why) = add_reaction.delete(&ctx) {
+                                        println!("Error deleting react: {:?}", why);
+                                    };
+                                }
+                                if user.id.0 != BOT_ID {
+                                    update_motion(&ctx, &mut message, &user, "add", add_reaction);
+                                }
                             }
                             Ok(false) => {
                                 if user.id.0 != BOT_ID {
@@ -99,6 +115,21 @@ impl EventHandler for Handler {
             }
             Err(why) => {
                 println!("Error processing react: {:?}", why);
+            }
+        }
+    }
+
+    fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
+        match removed_reaction.message(&ctx.http) {
+            Ok(mut message) => {
+                if message.author.id.0 == BOT_ID {
+                    if let Ok(user) = removed_reaction.user(&ctx) {
+                        update_motion(&ctx, &mut message, &user, "remove", removed_reaction);
+                    }
+                }
+            }
+            Err(why) => {
+                println!("Error getting user role: {:?}", why);
             }
         }
     }
@@ -155,26 +186,21 @@ fn main() {
 }
 
 fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
+    println!("{} created a motion {}", msg.author.name, topic);
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
             embed.colour(serenity::utils::Colour::GOLD);
             embed.title(format!("Motion to {}", topic));
             let mut desc = MessageBuilder::new();
-            desc.push("Motion by ");
+            desc.role(VOTE_ROLE);
+            desc.push(" take a look at this motion from ");
             desc.mention(&msg.author);
             embed.description(desc.build());
             embed.field("Status", "Under Consideration", true);
-            embed.field(
-                "Votes",
-                "👍 For: ?\n👎 Against: ?\n🙊 Abstain: ?",
-                true,
-            );
-            embed.footer(|f| {
-                f.text("Motion power: 0");
-                f
-            });
+            embed.field("Votes", "For: 0\nAgainst: 0\nAbstain: 0", true);
             embed
         });
+        // m.reactions(&[FOR_VOTE.to_string(),AGAINST_VOTE.to_string(), ABSTAIN_VOTE.to_string()]);
         m
     }) {
         Err(why) => {
@@ -184,26 +210,117 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             if let Err(why) = msg.delete(ctx) {
                 println!("Error deleting motion prompt: {:?}", why);
             }
-            if let Err(why) = message.react(ctx, "👍") {
+            if let Err(why) = message.react(ctx, FOR_VOTE) {
                 println!("Error sending 👍 react: {:?}", why);
             }
-            if let Err(why) = message.react(ctx, "👎") {
+            if let Err(why) = message.react(ctx, AGAINST_VOTE) {
                 println!("Error sending 👎 react: {:?}", why);
             }
-            if let Err(why) = message.react(ctx, "🙊") {
-                println!("Error sending 🤷 react: {:?}", why);
+            if let Err(why) = message.react(ctx, ABSTAIN_VOTE) {
+                println!("Error sending 🙊 react: {:?}", why);
             }
         }
     }
 }
 
-fn updateMotion(ctx: &Context, msg: &mut Message, user: &serenity::model::user::User) {
+fn update_motion(
+    ctx: &Context,
+    msg: &mut Message,
+    user: &serenity::model::user::User,
+    change: &str,
+    reaction: channel::Reaction,
+) {
+    let for_votes = msg.reaction_users(ctx, FOR_VOTE, None, None).unwrap().len() as isize - 1;
+    let against_votes = msg
+        .reaction_users(ctx, AGAINST_VOTE, None, None)
+        .unwrap()
+        .len() as isize
+        - 1;
+    let abstain_votes = msg
+        .reaction_users(ctx, ABSTAIN_VOTE, None, None)
+        .unwrap()
+        .len() as isize
+        - 1;
+
+    let strength_buff = |react: &str| {
+        msg.reaction_users(ctx, react, None, None)
+            .unwrap()
+            .iter()
+            .filter(|u| match u.has_role(ctx, SERVER_ID, TIEBREAKER_ROLE) {
+                Ok(true) => true,
+                _ => false,
+            })
+            .count()
+            > 0
+    };
+
+    let for_strength = for_votes as f32 + (if strength_buff(FOR_VOTE) { 0.5 } else { 0.0 });
+    let against_strength = against_votes as f32
+        + (if strength_buff(AGAINST_VOTE) {
+            0.5
+        } else {
+            0.0
+        });
+    let abstain_strength = abstain_votes as f32
+        + (if strength_buff(ABSTAIN_VOTE) {
+            0.5
+        } else {
+            0.0
+        });
+
     let old_embed = msg.embeds[0].clone();
+    let topic = old_embed.clone().title.unwrap();
+    println!(
+        "  {:10} {:6} {} on {}",
+        user.name,
+        change,
+        reaction.emoji.as_data().as_str(),
+        topic
+    );
     if let Err(why) = msg.edit(ctx, |m| {
         m.embed(|e| {
-            e.title(old_embed.title.unwrap());
-            e.colour(serenity::utils::Colour::RED);
+            e.title(&topic);
             e.description(old_embed.description.unwrap());
+            let last_status = old_embed
+                .fields
+                .iter()
+                .filter(|f| f.name == "Status")
+                .next()
+                .expect("No previous status")
+                .clone()
+                .value;
+            if for_strength > (VOTE_POOL_SIZE / 2) as f32 {
+                e.colour(serenity::utils::Colour::TEAL);
+                e.field("Status", format!("Passed\n_was_ {}", last_status), true);
+                println!("Motion to {} PASSED", &topic)
+            } else if against_strength + abstain_strength > (VOTE_POOL_SIZE / 2) as f32 {
+                e.colour(serenity::utils::Colour::RED);
+                e.field("Status", format!("Failed\n_was_ {}", last_status), true);
+                println!("Motion to {} FAILED", &topic)
+            } else {
+                e.colour(serenity::utils::Colour::GOLD);
+                e.field(
+                    "Status",
+                    if last_status != "Under Consideration" {
+                        format!("Under Consideration\n_was_ {}", last_status)
+                    } else {
+                        "Under Consideration".to_string()
+                    },
+                    true,
+                );
+            }
+            e.field(
+                format!(
+                    "Votes ({}/{})",
+                    for_votes + against_votes + abstain_votes,
+                    VOTE_POOL_SIZE
+                ),
+                format!(
+                    "For: {}\nAgainst: {}\nAbstain: {}",
+                    for_votes, against_votes, abstain_votes
+                ),
+                true,
+            );
             e
         })
     }) {
