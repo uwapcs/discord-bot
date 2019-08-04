@@ -8,24 +8,24 @@ use rand::Rng;
 
 struct Handler;
 
-const SERVER_ID: u64 = 606351521117896704;
+static SERVER_ID: u64 = 606351521117896704;
 // #general
-const MAIN_CHANNEL: serenity::model::id::ChannelId =
+static MAIN_CHANNEL: serenity::model::id::ChannelId =
     serenity::model::id::ChannelId(606351521117896706);
 // #the-corner
-const WELCOME_CHANNEL: serenity::model::id::ChannelId =
+static WELCOME_CHANNEL: serenity::model::id::ChannelId =
     serenity::model::id::ChannelId(606351613816209418);
 
-const BOT_ID: u64 = 607078903969742848;
+static BOT_ID: u64 = 607078903969742848;
 
-const VOTE_POOL_SIZE: i8 = 2;
-const VOTE_ROLE: u64 = 607478818038480937;
-const TIEBREAKER_ROLE: u64 = 607509283483025409;
+static VOTE_POOL_SIZE: i8 = 2;
+static VOTE_ROLE: u64 = 607478818038480937;
+static TIEBREAKER_ROLE: u64 = 607509283483025409;
 
-const FOR_VOTE: &'static str = "👍";
-const AGAINST_VOTE: &'static str = "👎";
-const ABSTAIN_VOTE: &'static str = "🙊";
-const ALLOWED_REACTS: &'static [&'static str] = &[FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE];
+static FOR_VOTE: &str = "👍";
+static AGAINST_VOTE: &str = "👎";
+static ABSTAIN_VOTE: &str = "🙊";
+static ALLOWED_REACTS: &[&'static str] = &[FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE];
 
 impl EventHandler for Handler {
     // Set a handler for the `message` event - so that whenever a new message
@@ -200,7 +200,11 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed.field("Votes", "For: 0\nAgainst: 0\nAbstain: 0", true);
             embed
         });
-        // m.reactions(&[FOR_VOTE.to_string(),AGAINST_VOTE.to_string(), ABSTAIN_VOTE.to_string()]);
+        m.reactions(&[
+            FOR_VOTE.to_string().into(channel::ReactionType),
+            AGAINST_VOTE.to_string().into(channel::ReactionType),
+            ABSTAIN_VOTE.to_string().into(channel::ReactionType),
+        ]);
         m
     }) {
         Err(why) => {
