@@ -200,26 +200,13 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed.field("Votes", "For: 0\nAgainst: 0\nAbstain: 0", true);
             embed
         });
-        m.reactions(&[
-            FOR_VOTE.to_string().into(channel::ReactionType),
-            AGAINST_VOTE.to_string().into(channel::ReactionType),
-            ABSTAIN_VOTE.to_string().into(channel::ReactionType),
-        ]);
+        m.reactions(vec![FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE]);
         m
     }) {
         Err(why) => {
             println!("Error sending message: {:?}", why);
         }
         Ok(message) => {
-            if let Err(why) = msg.delete(ctx) {
-                println!("Error deleting motion prompt: {:?}", why);
-            }
-            if let Err(why) = message.react(ctx, FOR_VOTE) {
-                println!("Error sending 👍 react: {:?}", why);
-            }
-            if let Err(why) = message.react(ctx, AGAINST_VOTE) {
-                println!("Error sending 👎 react: {:?}", why);
-            }
             if let Err(why) = message.react(ctx, ABSTAIN_VOTE) {
                 println!("Error sending 🙊 react: {:?}", why);
             }
