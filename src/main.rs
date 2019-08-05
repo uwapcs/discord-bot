@@ -57,7 +57,16 @@ impl EventHandler for Handler {
             let mut iter = msg.content.chars();
             iter.by_ref().nth(5);
             let topic = iter.as_str();
-            create_motion(&ctx, &msg, topic);
+            if topic == "" {
+                if let Err(why) = msg.channel_id.say(
+                    &ctx.http,
+                    "If there's something you want to motion, put it after the !move keyword",
+                ) {
+                    println!("Error sending message: {:?}", why);
+                }
+            } else {
+                create_motion(&ctx, &msg, topic);
+            }
         } else if msg.content.starts_with("!motion") {
             if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
                 println!("Error sending message: {:?}", why);
