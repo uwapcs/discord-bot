@@ -15,6 +15,9 @@ static MAIN_CHANNEL: serenity::model::id::ChannelId =
 // #the-corner
 static WELCOME_CHANNEL: serenity::model::id::ChannelId =
     serenity::model::id::ChannelId(606351613816209418);
+// #general
+static ANNOUNCEMENT_CHANNEL: serenity::model::id::ChannelId =
+    serenity::model::id::ChannelId(606351521117896706);
 
 static BOT_ID: u64 = 607078903969742848;
 
@@ -261,6 +264,7 @@ fn update_motion(
 
     let old_embed = msg.embeds[0].clone();
     let topic = old_embed.clone().title.unwrap();
+
     println!(
         "  {:10} {:6} {} on {}",
         user.name,
@@ -268,11 +272,38 @@ fn update_motion(
         reaction.emoji.as_data().as_str(),
         topic
     );
+
+    let update_status = |e: &mut serenity::builder::CreateEmbed,
+                         status: &str,
+                         last_status_full: String,
+                         topic: &str| {
+        let last_status = last_status_full.lines().next().expect("No previous status");
+        if last_status == status {
+            e.field("Status", last_status_full, true);
+        } else {
+            e.field(
+                "Status",
+                format!("{}\n_was_ {}", status, last_status_full),
+                true,
+            );
+            println!("Motion to {} now {}", topic, status);
+            //
+            let mut message = MessageBuilder::new();
+            message.push_bold(topic);
+            message.push(" is now ");
+            message.push_bold(status);
+            message.push_italic(format!(" (was {})", last_status));
+            if let Err(why) = ANNOUNCEMENT_CHANNEL.say(&ctx.http, message.build()) {
+                println!("Error sending message: {:?}", why);
+            };
+        }
+    };
+
     if let Err(why) = msg.edit(ctx, |m| {
         m.embed(|e| {
             e.title(&topic);
             e.description(old_embed.description.unwrap());
-            let last_status = old_embed
+            let last_status_full = old_embed
                 .fields
                 .iter()
                 .filter(|f| f.name == "Status")
@@ -282,23 +313,13 @@ fn update_motion(
                 .value;
             if for_strength > (VOTE_POOL_SIZE / 2) as f32 {
                 e.colour(serenity::utils::Colour::TEAL);
-                e.field("Status", format!("Passed\n_was_ {}", last_status), true);
-                println!("Motion to {} PASSED", &topic)
+                update_status(e, "Passed", last_status_full, &topic);
             } else if against_strength + abstain_strength > (VOTE_POOL_SIZE / 2) as f32 {
                 e.colour(serenity::utils::Colour::RED);
-                e.field("Status", format!("Failed\n_was_ {}", last_status), true);
-                println!("Motion to {} FAILED", &topic)
+                update_status(e, "Failed", last_status_full, &topic);
             } else {
                 e.colour(serenity::utils::Colour::GOLD);
-                e.field(
-                    "Status",
-                    if last_status != "Under Consideration" {
-                        format!("Under Consideration\n_was_ {}", last_status)
-                    } else {
-                        "Under Consideration".to_string()
-                    },
-                    true,
-                );
+                update_status(e, "Under Consideration", last_status_full, &topic);
             }
             e.field(
                 format!(
