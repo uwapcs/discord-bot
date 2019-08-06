@@ -155,7 +155,8 @@ impl EventHandler for Handler {
         let mut message = MessageBuilder::new();
         message.push("Nice to see you here ");
         message.mention(&new_member);
-        message.push("! Would you care to introduce yourself?");
+        message.push_line("! Would you care to introduce yourself?");
+        message.push("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
         if let Err(why) = WELCOME_CHANNEL.say(&ctx, message.build()) {
             println!("Error sending message: {:?}", why);
         }
