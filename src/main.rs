@@ -30,7 +30,17 @@ static REGISTERED_MEMBER_ROLE: u64 = 608282133118582815;
 static FOR_VOTE: &str = "👍";
 static AGAINST_VOTE: &str = "👎";
 static ABSTAIN_VOTE: &str = "🙊";
-static ALLOWED_REACTS: &[&'static str] = &[FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE];
+static APPROVE_REACT: &str = "⬆";
+static DISAPPROVE_REACT: &str = "⬇";
+static UNSURE_REACT: &str = "❔";
+static ALLOWED_REACTS: &[&'static str] = &[
+    FOR_VOTE,
+    AGAINST_VOTE,
+    ABSTAIN_VOTE,
+    APPROVE_REACT,
+    DISAPPROVE_REACT,
+    UNSURE_REACT,
+];
 
 impl EventHandler for Handler {
     // Set a handler for the `message` event - so that whenever a new message
@@ -80,6 +90,21 @@ impl EventHandler for Handler {
         } else if msg.content.starts_with("!motion") {
             if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
                 println!("Error sending message: {:?}", why);
+            }
+        }
+        if msg.content.starts_with("!poll") {
+            let mut iter = msg.content.chars();
+            iter.by_ref().nth(5);
+            let topic = iter.as_str();
+            if topic == "" {
+                if let Err(why) = msg.channel_id.say(
+                    &ctx.http,
+                    "If there's something you want to poll, put it after the !move keyword",
+                ) {
+                    println!("Error sending message: {:?}", why);
+                }
+            } else {
+                create_poll(&ctx, &msg, topic);
             }
         } else if msg.content.starts_with("!register") {
             let mut iter = msg.content.chars();
@@ -169,7 +194,8 @@ impl EventHandler for Handler {
             }
         } else if msg.content == "!help" {
             let mut message = MessageBuilder::new();
-            message.push("Use !move <action> to make a circular motion");
+            message.push_line("Use !move <action> to make a circular motion");
+            message.push_line("Use !poll <proposal> to see what people think about something");
             if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
                 println!("Error sending message: {:?}", why);
             }
@@ -296,6 +322,32 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed
         });
         m.reactions(vec![FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE]);
+        m
+    }) {
+        Err(why) => {
+            println!("Error sending message: {:?}", why);
+        }
+        Ok(_) => {
+            if let Err(why) = msg.delete(ctx) {
+                println!("Error deleting motion prompt: {:?}", why);
+            }
+        }
+    }
+}
+
+fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
+    println!("{} created a poll {}", msg.author.name, topic);
+    match msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|embed| {
+            embed.colour(serenity::utils::Colour::BLUE);
+            embed.title(format!("Poll {}", topic));
+            let mut desc = MessageBuilder::new();
+            desc.mention(&msg.author);
+            desc.push(" wants to know what you think.");
+            embed.description(desc.build());
+            embed
+        });
+        m.reactions(vec![APPROVE_REACT, DISAPPROVE_REACT, UNSURE_REACT]);
         m
     }) {
         Err(why) => {
@@ -444,7 +496,7 @@ fn new_member(ctx: &Context, mut new_member: Member) {
     }
 
     let mut message = MessageBuilder::new();
-    message.push(format!("Say hi to {:?} in ", new_member.display_name()));
+    message.push(format!("Say hi to {} in ", new_member.display_name()));
     message.mention(&WELCOME_CHANNEL);
     if let Err(why) = MAIN_CHANNEL.say(&ctx, message.build()) {
         println!("Error sending message: {:?}", why);
