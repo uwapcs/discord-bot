@@ -24,6 +24,8 @@ static BOT_ID: u64 = 607078903969742848;
 static VOTE_POOL_SIZE: i8 = 2;
 static VOTE_ROLE: u64 = 607478818038480937;
 static TIEBREAKER_ROLE: u64 = 607509283483025409;
+static UNREGISTERED_MEMBER_ROLE: u64 = 608282247350714408;
+static REGISTERED_MEMBER_ROLE: u64 = 608282133118582815;
 
 static FOR_VOTE: &str = "👍";
 static AGAINST_VOTE: &str = "👎";
@@ -42,15 +44,23 @@ impl EventHandler for Handler {
             let mut message = MessageBuilder::new();
             message.push(
                 [
-                    "I see you have seen fit to send another message ",
+                    "That's quite enough from you ",
                     "Why do you continue to bother us ",
                     "Oh. It's you again ",
                     "What are you doing ",
-                ][rng.gen_range(0, 3)],
+                ][rng.gen_range(0, 4)],
             );
             message.mention(&msg.author);
             if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
                 println!("Error sending message: {:?}", why);
+            }
+        }
+        if msg.content.starts_with("!join") {
+            match serenity::model::id::GuildId(SERVER_ID).member(ctx.http.clone(), msg.author.id) {
+                Ok(member) => {
+                    new_member(&ctx, member);
+                }
+                _ => {}
             }
         }
         if msg.content.starts_with("!move") {
@@ -69,6 +79,92 @@ impl EventHandler for Handler {
             }
         } else if msg.content.starts_with("!motion") {
             if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
+                println!("Error sending message: {:?}", why);
+            }
+        } else if msg.content.starts_with("!register") {
+            let mut iter = msg.content.chars();
+            iter.by_ref().nth(9);
+            let name = iter.as_str();
+            if name == "" {
+                if let Err(why) = msg
+                    .channel_id
+                    .say(&ctx.http, "Usage: !register <ucc username>")
+                {
+                    println!("Error sending message: {:?}", why);
+                }
+            } else {
+                match serenity::model::id::GuildId(SERVER_ID)
+                    .member(ctx.http.clone(), msg.author.id)
+                {
+                    Ok(mut member) => {
+                        if let Err(why) = member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE) {
+                            println!("Unable to remove role: {:?}", why);
+                        };
+                        match member.edit(&ctx.http, |m| {
+                            let mut rng = rand::thread_rng();
+                            m.nickname(format!(
+                                "{}, {}",
+                                name,
+                                [
+                                    "The Big Cheese",
+                                    "The One and Only",
+                                    "The Exalted One",
+                                    "not to be trusted",
+                                    "The Scoundrel",
+                                    "A big fish in a small pond",
+                                ][rng.gen_range(0, 4)]
+                            ));
+                            m
+                        }) {
+                            Ok(_) => {
+                                if let Err(why) = member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE)
+                                {
+                                    println!("Unable to add role: {:?}", why);
+                                };
+                            }
+                            Err(why) => {
+                                println!("Unable to edit nickname: {:?}", why);
+                            }
+                        };
+                    }
+                    Err(why) => {
+                        println!("Unable to get member: {:?}", why);
+                    }
+                }
+            }
+            if let Err(why) = msg.delete(ctx) {
+                println!("Error deleting motion prompt: {:?}", why);
+            }
+        } else if msg.content.starts_with("!cowsay") {
+            let mut iter = msg.content.chars();
+            iter.by_ref().nth(7);
+            let text = iter.as_str();
+            let output = std::process::Command::new("cowsay")
+                .arg(text)
+                .output()
+                .expect("failed to execute cowsay");
+            let mut message = MessageBuilder::new();
+            message.push_codeblock(
+                String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
+                None,
+            );
+            if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
+                println!("Error sending message: {:?}", why);
+            }
+        } else if msg.content.starts_with("!troll") {
+            let mut iter = msg.content.chars();
+            iter.by_ref().nth(5);
+            let text = iter.as_str();
+            let output = std::process::Command::new("cat")
+                .arg(text)
+                .output()
+                .expect("failed to execute cowsay");
+            let mut message = MessageBuilder::new();
+            message.push_codeblock(
+                String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
+                None,
+            );
+            if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
                 println!("Error sending message: {:?}", why);
             }
         } else if msg.content == "!help" {
@@ -150,23 +246,9 @@ impl EventHandler for Handler {
         &self,
         ctx: Context,
         _guild_id: serenity::model::id::GuildId,
-        new_member: Member,
+        the_new_member: Member,
     ) {
-        let mut message = MessageBuilder::new();
-        message.push("Nice to see you here ");
-        message.mention(&new_member);
-        message.push_line("! Would you care to introduce yourself?");
-        message.push("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
-        if let Err(why) = WELCOME_CHANNEL.say(&ctx, message.build()) {
-            println!("Error sending message: {:?}", why);
-        }
-
-        let mut message = MessageBuilder::new();
-        message.push(format!("Say hi to {:?} in ", new_member.display_name()));
-        message.mention(&WELCOME_CHANNEL);
-        if let Err(why) = MAIN_CHANNEL.say(&ctx, message.build()) {
-            println!("Error sending message: {:?}", why);
-        }
+        new_member(&ctx, the_new_member);
     }
 
     // Set a handler to be called on the `ready` event. This is called when a
@@ -219,9 +301,9 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
         Err(why) => {
             println!("Error sending message: {:?}", why);
         }
-        Ok(message) => {
-            if let Err(why) = message.react(ctx, ABSTAIN_VOTE) {
-                println!("Error sending 🙊 react: {:?}", why);
+        Ok(_) => {
+            if let Err(why) = msg.delete(ctx) {
+                println!("Error deleting motion prompt: {:?}", why);
             }
         }
     }
@@ -348,4 +430,27 @@ fn update_motion(
     }) {
         println!("Error updating motion: {:?}", why);
     }
+}
+
+fn new_member(ctx: &Context, mut new_member: Member) {
+    let mut message = MessageBuilder::new();
+    message.push("Nice to see you here ");
+    message.mention(&new_member);
+    message.push_line("! Would you care to introduce yourself?");
+    message.push_line("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
+    message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide");
+    if let Err(why) = WELCOME_CHANNEL.say(&ctx, message.build()) {
+        println!("Error sending message: {:?}", why);
+    }
+
+    let mut message = MessageBuilder::new();
+    message.push(format!("Say hi to {:?} in ", new_member.display_name()));
+    message.mention(&WELCOME_CHANNEL);
+    if let Err(why) = MAIN_CHANNEL.say(&ctx, message.build()) {
+        println!("Error sending message: {:?}", why);
+    }
+
+    if let Err(why) = new_member.add_role(&ctx.http, UNREGISTERED_MEMBER_ROLE) {
+        println!("Error adding user role: {:?}", why);
+    };
 }
