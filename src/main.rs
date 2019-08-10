@@ -8,6 +8,8 @@ use rand::Rng;
 
 static DISCORD_TOKEN: &str = include_str!("discord_token");
 
+static DISCORD_TOKEN: &str = include_str!("discord_token");
+
 static SERVER_ID: u64 = 606351521117896704;
 // #general
 static MAIN_CHANNEL: serenity::model::id::ChannelId =
