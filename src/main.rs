@@ -8,6 +8,8 @@ use rand::Rng;
 
 struct Handler;
 
+static DISCORD_TOKEN: &str = include_str!("discord_token");
+
 static SERVER_ID: u64 = 606351521117896704;
 // #general
 static MAIN_CHANNEL: serenity::model::id::ChannelId =
@@ -290,7 +292,7 @@ impl EventHandler for Handler {
 
 fn main() {
     // Configure the client with your Discord bot token in the environment.
-    let token = include_str!("discord_token");
+    let token = DISCORD_TOKEN;
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
