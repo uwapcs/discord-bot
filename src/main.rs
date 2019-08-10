@@ -67,140 +67,110 @@ impl EventHandler for Handler {
                 println!("Error sending message: {:?}", why);
             }
         }
-        if msg.content.starts_with("!join") {
-            match serenity::model::id::GuildId(SERVER_ID).member(ctx.http.clone(), msg.author.id) {
-                Ok(member) => {
-                    new_member(&ctx, member);
-                }
-                _ => {}
-            }
-        } else if msg.content.starts_with("!move") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(5);
-            let topic = iter.as_str();
-            if topic == "" {
-                if let Err(why) = msg.channel_id.say(
-                    &ctx.http,
-                    "If there's something you want to motion, put it after the !move keyword",
-                ) {
-                    println!("Error sending message: {:?}", why);
-                }
-            } else {
-                create_motion(&ctx, &msg, topic);
-            }
-        } else if msg.content.starts_with("!motion") {
-            if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
-                println!("Error sending message: {:?}", why);
-            }
-        } else if msg.content.starts_with("!poll") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(5);
-            let topic = iter.as_str();
-            if topic == "" {
-                if let Err(why) = msg.channel_id.say(
-                    &ctx.http,
-                    "If there's something you want to poll, put it after the !move keyword",
-                ) {
-                    println!("Error sending message: {:?}", why);
-                }
-            } else {
-                create_poll(&ctx, &msg, topic);
-            }
-        } else if msg.content.starts_with("!register") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(9);
-            let name = iter.as_str();
-            if name == "" {
-                if let Err(why) = msg
-                    .channel_id
-                    .say(&ctx.http, "Usage: !register <ucc username>")
-                {
-                    println!("Error sending message: {:?}", why);
-                }
-            } else {
-                match serenity::model::id::GuildId(SERVER_ID)
+
+        let message_content: Vec<_> = msg.content.splitn(2, ' ').collect();
+        match message_content[0] {
+            "!join" => {
+                serenity::model::id::GuildId(SERVER_ID)
                     .member(ctx.http.clone(), msg.author.id)
-                {
-                    Ok(mut member) => {
-                        if let Err(why) = member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE) {
-                            println!("Unable to remove role: {:?}", why);
-                        };
-                        match member.edit(&ctx.http, |m| {
-                            let mut rng = rand::thread_rng();
-                            m.nickname(format!(
-                                "{}, {}",
-                                name,
-                                [
-                                    "The Big Cheese",
-                                    "The One and Only",
-                                    "The Exalted One",
-                                    "not to be trusted",
-                                    "The Scoundrel",
-                                    "A big fish in a small pond",
-                                ][rng.gen_range(0, 4)]
-                            ));
-                            m
-                        }) {
-                            Ok(_) => {
-                                if let Err(why) = member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE)
-                                {
-                                    println!("Unable to add role: {:?}", why);
-                                };
-                            }
-                            Err(why) => {
-                                println!("Unable to edit nickname: {:?}", why);
-                            }
-                        };
-                    }
-                    Err(why) => {
-                        println!("Unable to get member: {:?}", why);
-                    }
+                    .map(|member| new_member(&ctx, member));
+            },
+            "!move" => {
+                let motion = message_content[1];
+                if motion.len() > 0 {
+                    create_motion(&ctx, &msg, motion);
+                } else {
+                    msg.channel_id.say(
+                        &ctx.http,
+                        "If there's something you want to motion, put it after the !move keyword",
+                    ).map_err(|why| eprintln!("Error sending message: {:?}", why));
                 }
-            }
-            if let Err(why) = msg.delete(ctx) {
-                println!("Error deleting motion prompt: {:?}", why);
-            }
-        } else if msg.content.starts_with("!cowsay") {
-            let mut text = msg.content.split_at(7).1.to_owned();
-            text.escape_default();
-            // Guess what buddy! You definitely are passing a string to cowsay
-            text.insert(0, '\'');
-            text.insert(text.len(), '\'');
-            let output = std::process::Command::new("cowsay")
-                .arg(text)
-                .output()
-                .expect("failed to execute cowsay");
-            let mut message = MessageBuilder::new();
-            message.push_codeblock(
-                String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
-                None,
-            );
-            if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
-                println!("Error sending message: {:?}", why);
-            }
-        } else if msg.content.starts_with("!troll") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(5);
-            let text = iter.as_str();
-            let output = std::process::Command::new("cat")
-                .arg(text)
-                .output()
-                .expect("failed to execute cowsay");
-            let mut message = MessageBuilder::new();
-            message.push_codeblock(
-                String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
-                None,
-            );
-            if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
-                println!("Error sending message: {:?}", why);
-            }
-        } else if msg.content == "!help" {
-            let mut message = MessageBuilder::new();
-            message.push_line("Use !move <action> to make a circular motion");
-            message.push_line("Use !poll <proposal> to see what people think about something");
-            if let Err(why) = msg.channel_id.say(&ctx.http, message.build()) {
-                println!("Error sending message: {:?}", why);
-            }
+            },
+            "!motion" => {
+                msg.channel_id.say(
+                    &ctx.http,
+                    "I hope you're not having a motion. You may have wanted to !move something instead."
+                ).map_err(|why| eprintln!("Error sending message: {:?}", why));
+            },
+            "!poll" => {
+                let topic = message_content[1];
+                if topic.len() > 0 {
+                    create_motion(&ctx, &msg, topic);
+                } else {
+                    msg.channel_id.say(
+                        &ctx.http,
+                        "If there's something you want to motion, put it after the !move keyword",
+                    ).map_err(|why| eprintln!("Error sending message: {:?}", why));
+                }
+            },
+            "!register" => {
+                let name = message_content[1];
+                if name.len() > 0 {
+                    serenity::model::id::GuildId(SERVER_ID)
+                        .member(ctx.http.clone(), msg.author.id)
+                        .map(|mut member| {
+                            member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE)
+                                .map_err(|why| eprintln!("Unable to remove role: {:?}", why));
+                            member.edit(&ctx.http, |m| {
+                                let mut rng = rand::thread_rng();
+                                m.nickname(format!(
+                                    "{}, {}",
+                                    name,
+                                    [
+                                        "The Big Cheese",
+                                        "The One and Only",
+                                        "The Exalted One",
+                                        "not to be trusted",
+                                        "The Scoundrel",
+                                        "A big fish in a small pond",
+                                    ][rng.gen_range(0, 5)]
+                                ));
+                                m
+                            }).map(|()| {
+                                member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE)
+                                    .map_err(|why| {
+                                        eprintln!("Unable to add role: {:?}", why);
+                                    })
+                            }).map_err(|why| {
+                                eprintln!("Unable to edit nickname: {:?}", why);
+                            });
+                        })
+                    .map_err(|why| {
+                        eprintln!("Unable to get member: {:?}", why);
+                    });
+                    msg.delete(ctx).map_err(|why| eprintln!("Error deleting register message: {:?}", why));
+                } else {
+                    msg.channel_id.say(&ctx.http, "Usage: !register <ucc username>")
+                        .map_err(|why| eprintln!("Error sending message: {:?}", why));
+                }
+            },
+            "!cowsay" => {
+                let mut text = message_content[1].to_owned();
+                text.escape_default();
+                // Guess what buddy! You definitely are passing a string to cowsay
+                text.insert(0, '\'');
+                text.insert(text.len(), '\'');
+                let output = std::process::Command::new("cowsay")
+                    .arg(text)
+                    .output()
+                    // btw, if we can't execute cowsay we crash
+                    .expect("failed to execute cowsay");
+                let mut message = MessageBuilder::new();
+                message.push_codeblock(
+                    String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
+                    None,
+                );
+                msg.channel_id.say(&ctx.http, message.build())
+                    .map_err(|why| eprintln!("Error sending message: {:?}", why));
+            },
+            "!help" => {
+                let mut message = MessageBuilder::new();
+                message.push_line("Use !move <action> to make a circular motion");
+                message.push_line("Use !poll <proposal> to see what people think about something");
+                msg.channel_id.say(&ctx.http, message.build())
+                    .map_err(|why| eprintln!("Error sending message: {:?}", why));
+            },
+            _ => {}
         }
     }
 
