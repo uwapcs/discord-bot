@@ -167,7 +167,7 @@ impl EventHandler for Handler {
             iter.by_ref().nth(7);
             let text = iter.as_str();
             let output = std::process::Command::new("cowsay")
-                .arg(text)
+                .arg(text.escape_default())
                 .output()
                 .expect("failed to execute cowsay");
             let mut message = MessageBuilder::new();
