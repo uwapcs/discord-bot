@@ -74,8 +74,7 @@ impl EventHandler for Handler {
                 }
                 _ => {}
             }
-        }
-        if msg.content.starts_with("!move") {
+        } else if msg.content.starts_with("!move") {
             let mut iter = msg.content.chars();
             iter.by_ref().nth(5);
             let topic = iter.as_str();
@@ -93,8 +92,7 @@ impl EventHandler for Handler {
             if let Err(why) = msg.channel_id.say(&ctx.http, "I hope you're not having a motion. You may have wanted to !move something instead.") {
                 println!("Error sending message: {:?}", why);
             }
-        }
-        if msg.content.starts_with("!poll") {
+        } else if msg.content.starts_with("!poll") {
             let mut iter = msg.content.chars();
             iter.by_ref().nth(5);
             let topic = iter.as_str();
@@ -163,11 +161,13 @@ impl EventHandler for Handler {
                 println!("Error deleting motion prompt: {:?}", why);
             }
         } else if msg.content.starts_with("!cowsay") {
-            let mut iter = msg.content.chars();
-            iter.by_ref().nth(7);
-            let text = iter.as_str();
+            let mut text = msg.content.split_at(7).1.to_owned();
+            text.escape_default();
+            // Guess what buddy! You definitely are passing a string to cowsay
+            text.insert(0, '\'');
+            text.insert(text.len(), '\'');
             let output = std::process::Command::new("cowsay")
-                .arg(text.escape_default())
+                .arg(text)
                 .output()
                 .expect("failed to execute cowsay");
             let mut message = MessageBuilder::new();
