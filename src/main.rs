@@ -6,8 +6,6 @@ use serenity::{
 
 use rand::Rng;
 
-struct Handler;
-
 static DISCORD_TOKEN: &str = include_str!("discord_token");
 
 static SERVER_ID: u64 = 606351521117896704;
@@ -44,6 +42,17 @@ static ALLOWED_REACTS: &[&'static str] = &[
     UNSURE_REACT,
 ];
 
+macro_rules! e {
+    ($error: literal, $x:expr) => {
+        match $x {
+            Ok(_) => (),
+            Err(why) => eprintln!($error, why)
+        }
+    }
+}
+
+struct Handler;
+
 impl EventHandler for Handler {
     // Set a handler for the `message` event - so that whenever a new message
     // is received - the closure (or function) passed will be called.
@@ -71,47 +80,53 @@ impl EventHandler for Handler {
         let message_content: Vec<_> = msg.content.splitn(2, ' ').collect();
         match message_content[0] {
             "!join" => {
-                serenity::model::id::GuildId(SERVER_ID)
+                e!("Unable to get user: {:?}",
+                   serenity::model::id::GuildId(SERVER_ID)
                     .member(ctx.http.clone(), msg.author.id)
-                    .map(|member| new_member(&ctx, member));
+                    .map(|member| new_member(&ctx, member)));
             },
             "!move" => {
                 let motion = message_content[1];
                 if motion.len() > 0 {
                     create_motion(&ctx, &msg, motion);
                 } else {
-                    msg.channel_id.say(
+                    e!("Error sending message: {:?}",
+                       msg.channel_id.say(
                         &ctx.http,
                         "If there's something you want to motion, put it after the !move keyword",
-                    ).map_err(|why| eprintln!("Error sending message: {:?}", why));
+                    ));
                 }
             },
             "!motion" => {
-                msg.channel_id.say(
+                e!("Error sending message: {:?}",
+                   msg.channel_id.say(
                     &ctx.http,
                     "I hope you're not having a motion. You may have wanted to !move something instead."
-                ).map_err(|why| eprintln!("Error sending message: {:?}", why));
+                ));
             },
             "!poll" => {
                 let topic = message_content[1];
                 if topic.len() > 0 {
-                    create_motion(&ctx, &msg, topic);
+                    create_poll(&ctx, &msg, topic);
                 } else {
-                    msg.channel_id.say(
+                    e!("Error sending message: {:?}",
+                       msg.channel_id.say(
                         &ctx.http,
                         "If there's something you want to motion, put it after the !move keyword",
-                    ).map_err(|why| eprintln!("Error sending message: {:?}", why));
+                    ));
                 }
             },
             "!register" => {
                 let name = message_content[1];
                 if name.len() > 0 {
+                    e!("Unable to get member: {:?}",
                     serenity::model::id::GuildId(SERVER_ID)
                         .member(ctx.http.clone(), msg.author.id)
                         .map(|mut member| {
-                            member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE)
-                                .map_err(|why| eprintln!("Unable to remove role: {:?}", why));
-                            member.edit(&ctx.http, |m| {
+                            e!("Unable to remove role: {:?}",
+                               member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE));
+                            e!("Unable to edit nickname: {:?}",
+                               member.edit(&ctx.http, |m| {
                                 let mut rng = rand::thread_rng();
                                 m.nickname(format!(
                                     "{}, {}",
@@ -127,21 +142,16 @@ impl EventHandler for Handler {
                                 ));
                                 m
                             }).map(|()| {
-                                member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE)
-                                    .map_err(|why| {
-                                        eprintln!("Unable to add role: {:?}", why);
-                                    })
-                            }).map_err(|why| {
-                                eprintln!("Unable to edit nickname: {:?}", why);
-                            });
+                                e!("Unable to add role: {:?}",
+                                   member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE));
+                            }));
                         })
-                    .map_err(|why| {
-                        eprintln!("Unable to get member: {:?}", why);
-                    });
-                    msg.delete(ctx).map_err(|why| eprintln!("Error deleting register message: {:?}", why));
+                    );
+                    e!("Error deleting register message: {:?}",
+                       msg.delete(ctx));
                 } else {
-                    msg.channel_id.say(&ctx.http, "Usage: !register <ucc username>")
-                        .map_err(|why| eprintln!("Error sending message: {:?}", why));
+                    e!("Error sending message: {:?}",
+                       msg.channel_id.say(&ctx.http, "Usage: !register <ucc username>"));
                 }
             },
             "!cowsay" => {
@@ -160,15 +170,13 @@ impl EventHandler for Handler {
                     String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
                     None,
                 );
-                msg.channel_id.say(&ctx.http, message.build())
-                    .map_err(|why| eprintln!("Error sending message: {:?}", why));
+                e!("Error sending message: {:?}", msg.channel_id.say(&ctx.http, message.build()));
             },
             "!help" => {
                 let mut message = MessageBuilder::new();
                 message.push_line("Use !move <action> to make a circular motion");
                 message.push_line("Use !poll <proposal> to see what people think about something");
-                msg.channel_id.say(&ctx.http, message.build())
-                    .map_err(|why| eprintln!("Error sending message: {:?}", why));
+                e!("Error sending message: {:?}", msg.channel_id.say(&ctx.http, message.build()));
             },
             _ => {}
         }
