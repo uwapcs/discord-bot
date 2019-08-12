@@ -46,9 +46,9 @@ macro_rules! e {
     ($error: literal, $x:expr) => {
         match $x {
             Ok(_) => (),
-            Err(why) => eprintln!($error, why)
+            Err(why) => eprintln!($error, why),
         }
-    }
+    };
 }
 
 struct Handler;
@@ -80,11 +80,13 @@ impl EventHandler for Handler {
         let message_content: Vec<_> = msg.content.splitn(2, ' ').collect();
         match message_content[0] {
             "!join" => {
-                e!("Unable to get user: {:?}",
-                   serenity::model::id::GuildId(SERVER_ID)
-                    .member(ctx.http.clone(), msg.author.id)
-                    .map(|member| new_member(&ctx, member)));
-            },
+                e!(
+                    "Unable to get user: {:?}",
+                    serenity::model::id::GuildId(SERVER_ID)
+                        .member(ctx.http.clone(), msg.author.id)
+                        .map(|member| new_member(&ctx, member))
+                );
+            }
             "!move" => {
                 let motion = message_content[1];
                 if motion.len() > 0 {
@@ -96,14 +98,14 @@ impl EventHandler for Handler {
                         "If there's something you want to motion, put it after the !move keyword",
                     ));
                 }
-            },
+            }
             "!motion" => {
                 e!("Error sending message: {:?}",
                    msg.channel_id.say(
                     &ctx.http,
                     "I hope you're not having a motion. You may have wanted to !move something instead."
                 ));
-            },
+            }
             "!poll" => {
                 let topic = message_content[1];
                 if topic.len() > 0 {
@@ -115,45 +117,56 @@ impl EventHandler for Handler {
                         "If there's something you want to motion, put it after the !move keyword",
                     ));
                 }
-            },
+            }
             "!register" => {
                 let name = message_content[1];
                 if name.len() > 0 {
-                    e!("Unable to get member: {:?}",
-                    serenity::model::id::GuildId(SERVER_ID)
-                        .member(ctx.http.clone(), msg.author.id)
-                        .map(|mut member| {
-                            e!("Unable to remove role: {:?}",
-                               member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE));
-                            e!("Unable to edit nickname: {:?}",
-                               member.edit(&ctx.http, |m| {
-                                let mut rng = rand::thread_rng();
-                                m.nickname(format!(
-                                    "{}, {}",
-                                    name,
-                                    [
-                                        "The Big Cheese",
-                                        "The One and Only",
-                                        "The Exalted One",
-                                        "not to be trusted",
-                                        "The Scoundrel",
-                                        "A big fish in a small pond",
-                                    ][rng.gen_range(0, 5)]
-                                ));
-                                m
-                            }).map(|()| {
-                                e!("Unable to add role: {:?}",
-                                   member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE));
-                            }));
-                        })
+                    e!(
+                        "Unable to get member: {:?}",
+                        serenity::model::id::GuildId(SERVER_ID)
+                            .member(ctx.http.clone(), msg.author.id)
+                            .map(|mut member| {
+                                e!(
+                                    "Unable to remove role: {:?}",
+                                    member.remove_role(&ctx.http, UNREGISTERED_MEMBER_ROLE)
+                                );
+                                e!(
+                                    "Unable to edit nickname: {:?}",
+                                    member
+                                        .edit(&ctx.http, |m| {
+                                            let mut rng = rand::thread_rng();
+                                            m.nickname(format!(
+                                                "{}, {}",
+                                                name,
+                                                [
+                                                    "The Big Cheese",
+                                                    "The One and Only",
+                                                    "The Exalted One",
+                                                    "not to be trusted",
+                                                    "The Scoundrel",
+                                                    "A big fish in a small pond",
+                                                ][rng.gen_range(0, 5)]
+                                            ));
+                                            m
+                                        })
+                                        .map(|()| {
+                                            e!(
+                                                "Unable to add role: {:?}",
+                                                member.add_role(&ctx.http, REGISTERED_MEMBER_ROLE)
+                                            );
+                                        })
+                                );
+                            })
                     );
-                    e!("Error deleting register message: {:?}",
-                       msg.delete(ctx));
+                    e!("Error deleting register message: {:?}", msg.delete(ctx));
                 } else {
-                    e!("Error sending message: {:?}",
-                       msg.channel_id.say(&ctx.http, "Usage: !register <ucc username>"));
+                    e!(
+                        "Error sending message: {:?}",
+                        msg.channel_id
+                            .say(&ctx.http, "Usage: !register <ucc username>")
+                    );
                 }
-            },
+            }
             "!cowsay" => {
                 let mut text = message_content[1].to_owned();
                 text.escape_default();
@@ -170,14 +183,20 @@ impl EventHandler for Handler {
                     String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
                     None,
                 );
-                e!("Error sending message: {:?}", msg.channel_id.say(&ctx.http, message.build()));
-            },
+                e!(
+                    "Error sending message: {:?}",
+                    msg.channel_id.say(&ctx.http, message.build())
+                );
+            }
             "!help" => {
                 let mut message = MessageBuilder::new();
                 message.push_line("Use !move <action> to make a circular motion");
                 message.push_line("Use !poll <proposal> to see what people think about something");
-                e!("Error sending message: {:?}", msg.channel_id.say(&ctx.http, message.build()));
-            },
+                e!(
+                    "Error sending message: {:?}",
+                    msg.channel_id.say(&ctx.http, message.build())
+                );
+            }
             _ => {}
         }
     }
@@ -215,9 +234,13 @@ impl EventHandler for Handler {
                             }
                             Ok(false) => {
                                 if user.id.0 != BOT_ID {
-                                    if let Err(why) = add_reaction.delete(&ctx) {
-                                        println!("Error deleting react: {:?}", why);
-                                    };
+                                    if ![APPROVE_REACT, DISAPPROVE_REACT]
+                                        .contains(&add_reaction.emoji.as_data().as_str())
+                                    {
+                                        if let Err(why) = add_reaction.delete(&ctx) {
+                                            println!("Error deleting react: {:?}", why);
+                                        };
+                                    }
                                 }
                             }
                             Err(why) => {
@@ -301,7 +324,13 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed.field("Votes", "For: 0\nAgainst: 0\nAbstain: 0", true);
             embed
         });
-        m.reactions(vec![FOR_VOTE, AGAINST_VOTE, ABSTAIN_VOTE]);
+        m.reactions(vec![
+            FOR_VOTE,
+            AGAINST_VOTE,
+            ABSTAIN_VOTE,
+            APPROVE_REACT,
+            DISAPPROVE_REACT,
+        ]);
         m
     }) {
         Err(why) => {
