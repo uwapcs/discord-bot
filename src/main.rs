@@ -331,6 +331,7 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed.description(desc.build());
             embed.field("Status", "Under Consideration", true);
             embed.field("Votes", "For: 0\nAgainst: 0\nAbstain: 0", true);
+            embed.timestamp(msg.timestamp.to_rfc3339());
             embed
         });
         m.reactions(vec![
@@ -372,6 +373,7 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
             desc.mention(&msg.author);
             desc.push(" wants to know what you think.");
             embed.description(desc.build());
+            embed.timestamp(msg.timestamp.to_rfc3339());
             embed
         });
         m.reactions(vec![APPROVE_REACT, DISAPPROVE_REACT, UNSURE_REACT]);
@@ -513,6 +515,11 @@ fn update_motion(
                     for_votes, against_votes, abstain_votes
                 ),
                 true,
+            );
+            e.timestamp(
+                old_embed
+                    .timestamp
+                    .expect("Expected embed to have timestamp"),
             );
             e
         })
