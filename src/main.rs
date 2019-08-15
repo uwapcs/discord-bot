@@ -313,6 +313,15 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
     println!("{} created a motion {}", msg.author.name, topic);
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
+            embed.author(|a| {
+                a.name(&msg.author.name);
+                a.icon_url(
+                    msg.author
+                        .static_avatar_url()
+                        .expect("Expected author to have avatar"),
+                );
+                a
+            });
             embed.colour(serenity::utils::Colour::GOLD);
             embed.title(format!("Motion to {}", topic));
             let mut desc = MessageBuilder::new();
@@ -348,6 +357,15 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
     println!("{} created a poll {}", msg.author.name, topic);
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
+            embed.author(|a| {
+                a.name(&msg.author.name);
+                a.icon_url(
+                    msg.author
+                        .static_avatar_url()
+                        .expect("Expected author to have avatar"),
+                );
+                a
+            });
             embed.colour(serenity::utils::Colour::BLUE);
             embed.title(format!("Poll {}", topic));
             let mut desc = MessageBuilder::new();
@@ -454,6 +472,16 @@ fn update_motion(
 
     if let Err(why) = msg.edit(ctx, |m| {
         m.embed(|e| {
+            e.author(|a| {
+                let old_author = old_embed.clone().author.expect("Expected author in embed");
+                a.name(old_author.name);
+                a.icon_url(
+                    old_author
+                        .icon_url
+                        .expect("Expected embed author to have icon"),
+                );
+                a
+            });
             e.title(&topic);
             e.description(old_embed.description.unwrap());
             let last_status_full = old_embed
