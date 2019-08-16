@@ -328,6 +328,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                         if let Err(why) = add_reaction.delete(&ctx) {
                                             println!("Error deleting react: {:?}", why);
                                         };
+                                        return;
                                     }
                                 }
                             }
@@ -337,6 +338,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                 if let Err(why) = add_reaction.delete(&ctx) {
                                     println!("Error deleting react: {:?}", why);
                                 };
+                                return;
                             }
                             if user.id.0 != config::BOT_ID {
                                 update_motion(&ctx, &mut message, &user, "add", add_reaction);
@@ -350,6 +352,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                     if let Err(why) = add_reaction.delete(&ctx) {
                                         println!("Error deleting react: {:?}", why);
                                     };
+                                    return;
                                 }
                             }
                         }
