@@ -21,6 +21,8 @@ pub static TIEBREAKER_ROLE: u64 = 607509283483025409;
 pub static UNREGISTERED_MEMBER_ROLE: u64 = 608282247350714408;
 pub static REGISTERED_MEMBER_ROLE: u64 = 608282133118582815;
 
+pub static COMMAND_PREFIX: &str = "!";
+
 pub static FOR_VOTE: &str = "👍";
 pub static AGAINST_VOTE: &str = "👎";
 pub static ABSTAIN_VOTE: &str = "🙊";

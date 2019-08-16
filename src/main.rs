@@ -26,7 +26,7 @@ impl EventHandler for Handler {
     // Event handlers are dispatched through a threadpool, and so multiple
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with("!") {
+        if msg.content.starts_with(config::COMMAND_PREFIX) {
             let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
             match message_content[0] {
                 "register" => {
@@ -49,9 +49,14 @@ impl EventHandler for Handler {
                 }
                 "help" => {
                     let mut message = MessageBuilder::new();
-                    message.push_line("Use !move <action> to make a circular motion");
-                    message
-                        .push_line("Use !poll <proposal> to see what people think about something");
+                    message.push_line(format!(
+                        "Use {}move <action> to make a circular motion",
+                        config::COMMAND_PREFIX
+                    ));
+                    message.push_line(format!(
+                        "Use {}poll <proposal> to see what people think about something",
+                        config::COMMAND_PREFIX
+                    ));
                     e!(
                         "Error sending message: {:?}",
                         msg.channel_id.say(&ctx.http, message.build())
@@ -60,8 +65,10 @@ impl EventHandler for Handler {
                 _ => {
                     e!(
                         "Error sending message: {:?}",
-                        msg.channel_id
-                            .say(&ctx.http, "Unrecognised command. Try !help")
+                        msg.channel_id.say(
+                            &ctx.http,
+                            format!("Unrecognised command. Try {}help", config::COMMAND_PREFIX)
+                        )
                     );
                 }
             }
