@@ -85,11 +85,35 @@ impl EventHandler for Handler {
     }
 
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
-        voting::reaction_add(ctx, add_reaction);
+        match add_reaction.message(&ctx.http) {
+            Ok(message) => {
+                if message.author.id.0 == config::BOT_ID {
+                    match message_type(&message) {
+                        "motion" => {
+                            voting::reaction_add(ctx, add_reaction);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Err(why) => error!("Failed to get react message {:?}", why),
+        }
     }
 
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
-        voting::reaction_remove(ctx, removed_reaction);
+        match removed_reaction.message(&ctx.http) {
+            Ok(message) => {
+                if message.author.id.0 == config::BOT_ID {
+                    match message_type(&message) {
+                        "motion" => {
+                            voting::reaction_remove(ctx, removed_reaction);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Err(why) => error!("Failed to get react message {:?}", why),
+        }
     }
 
     fn guild_member_addition(
@@ -136,5 +160,20 @@ fn main() {
     // exponential backoff until it reconnects.
     if let Err(why) = client.start() {
         error!("Client error: {:?}", why);
+    }
+}
+
+fn message_type(message: &Message) -> &'static str {
+    if message.embeds.len() > 0 {
+        let title: String = message.embeds[0].title.clone().unwrap();
+        let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
+        let first_word_of_title = words_of_title[0];
+        return match first_word_of_title {
+            "Motion" => "motion",
+            "Poll" => "poll",
+            _ => "misc",
+        };
+    } else {
+        return "misc";
     }
 }
