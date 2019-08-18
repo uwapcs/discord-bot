@@ -343,52 +343,16 @@ fn update_motion(
 pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
     match add_reaction.message(&ctx.http) {
         Ok(mut message) => {
-            if message.author.id.0 == config::BOT_ID {
-                if let Ok(user) = add_reaction.user(&ctx) {
-                    match user.has_role(&ctx, config::SERVER_ID, config::VOTE_ROLE) {
-                        Ok(true) => {
-                            for react in
-                                [config::FOR_VOTE, config::AGAINST_VOTE, config::ABSTAIN_VOTE]
-                                    .iter()
-                                    .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
+            if let Ok(user) = add_reaction.user(&ctx) {
+                match user.has_role(&ctx, config::SERVER_ID, config::VOTE_ROLE) {
+                    Ok(true) => {
+                        for react in [config::FOR_VOTE, config::AGAINST_VOTE, config::ABSTAIN_VOTE]
+                            .iter()
+                            .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
+                        {
+                            for a_user in message.reaction_users(&ctx, *react, None, None).unwrap()
                             {
-                                for a_user in
-                                    message.reaction_users(&ctx, *react, None, None).unwrap()
-                                {
-                                    if a_user.id.0 == user.id.0 {
-                                        if let Err(why) = add_reaction.delete(&ctx) {
-                                            error!("Error deleting react: {:?}", why);
-                                        };
-                                        return;
-                                    }
-                                }
-                            }
-                            if !config::ALLOWED_REACTS
-                                .contains(&add_reaction.emoji.as_data().as_str())
-                            {
-                                if let Err(why) = add_reaction.delete(&ctx) {
-                                    error!("Error deleting react: {:?}", why);
-                                };
-                                return;
-                            }
-                            if user.id.0 != config::BOT_ID {
-                                let mut motion_info = get_cached_motion(&ctx, &message);
-                                if let Some(vote) = motion_info
-                                    .votes
-                                    .get_mut(add_reaction.emoji.as_data().as_str())
-                                {
-                                    vote.retain(|u| u.id != user.id);
-                                    vote.push(user.clone());
-                                }
-                                set_cached_motion(&message.id, motion_info);
-                                update_motion(&ctx, &mut message, &user, "add", add_reaction);
-                            }
-                        }
-                        Ok(false) => {
-                            if user.id.0 != config::BOT_ID {
-                                if ![config::APPROVE_REACT, config::DISAPPROVE_REACT]
-                                    .contains(&add_reaction.emoji.as_data().as_str())
-                                {
+                                if a_user.id.0 == user.id.0 {
                                     if let Err(why) = add_reaction.delete(&ctx) {
                                         error!("Error deleting react: {:?}", why);
                                     };
@@ -396,9 +360,40 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                 }
                             }
                         }
-                        Err(why) => {
-                            error!("Error getting user role: {:?}", why);
+                        if !config::ALLOWED_REACTS.contains(&add_reaction.emoji.as_data().as_str())
+                        {
+                            if let Err(why) = add_reaction.delete(&ctx) {
+                                error!("Error deleting react: {:?}", why);
+                            };
+                            return;
                         }
+                        if user.id.0 != config::BOT_ID {
+                            let mut motion_info = get_cached_motion(&ctx, &message);
+                            if let Some(vote) = motion_info
+                                .votes
+                                .get_mut(add_reaction.emoji.as_data().as_str())
+                            {
+                                vote.retain(|u| u.id != user.id);
+                                vote.push(user.clone());
+                            }
+                            set_cached_motion(&message.id, motion_info);
+                            update_motion(&ctx, &mut message, &user, "add", add_reaction);
+                        }
+                    }
+                    Ok(false) => {
+                        if user.id.0 != config::BOT_ID {
+                            if ![config::APPROVE_REACT, config::DISAPPROVE_REACT]
+                                .contains(&add_reaction.emoji.as_data().as_str())
+                            {
+                                if let Err(why) = add_reaction.delete(&ctx) {
+                                    error!("Error deleting react: {:?}", why);
+                                };
+                                return;
+                            }
+                        }
+                    }
+                    Err(why) => {
+                        error!("Error getting user role: {:?}", why);
                     }
                 }
             }
@@ -412,18 +407,16 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
 pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
     match removed_reaction.message(&ctx.http) {
         Ok(mut message) => {
-            if message.author.id.0 == config::BOT_ID {
-                if let Ok(user) = removed_reaction.user(&ctx) {
-                    let mut motion_info = get_cached_motion(&ctx, &message);
-                    if let Some(vote) = motion_info
-                        .votes
-                        .get_mut(removed_reaction.emoji.as_data().as_str())
-                    {
-                        vote.retain(|u| u.id != user.id);
-                    }
-                    set_cached_motion(&message.id, motion_info);
-                    update_motion(&ctx, &mut message, &user, "remove", removed_reaction);
+            if let Ok(user) = removed_reaction.user(&ctx) {
+                let mut motion_info = get_cached_motion(&ctx, &message);
+                if let Some(vote) = motion_info
+                    .votes
+                    .get_mut(removed_reaction.emoji.as_data().as_str())
+                {
+                    vote.retain(|u| u.id != user.id);
                 }
+                set_cached_motion(&message.id, motion_info);
+                update_motion(&ctx, &mut message, &user, "remove", removed_reaction);
             }
         }
         Err(why) => {

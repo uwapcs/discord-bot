@@ -87,13 +87,14 @@ impl EventHandler for Handler {
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 == config::BOT_ID {
-                    match message_type(&message) {
-                        "motion" => {
-                            voting::reaction_add(ctx, add_reaction);
-                        }
-                        _ => {}
+                if message.author.id.0 != config::BOT_ID {
+                    return
+                }
+                match message_type(&message) {
+                    "motion" => {
+                        voting::reaction_add(ctx, add_reaction);
                     }
+                    _ => {}
                 }
             }
             Err(why) => error!("Failed to get react message {:?}", why),
@@ -103,13 +104,14 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 == config::BOT_ID {
-                    match message_type(&message) {
-                        "motion" => {
-                            voting::reaction_remove(ctx, removed_reaction);
-                        }
-                        _ => {}
+                if message.author.id.0 != config::BOT_ID {
+                    return
+                }
+                match message_type(&message) {
+                    "motion" => {
+                        voting::reaction_remove(ctx, removed_reaction);
                     }
+                    _ => {}
                 }
             }
             Err(why) => error!("Failed to get react message {:?}", why),
