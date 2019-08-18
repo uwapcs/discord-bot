@@ -11,7 +11,7 @@ macro_rules! e {
     ($error: literal, $x:expr) => {
         match $x {
             Ok(_) => (),
-            Err(why) => eprintln!($error, why),
+            Err(why) => error!($error, why),
         }
     };
 }
@@ -24,18 +24,18 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content");
     if let Err(why) = config::WELCOME_CHANNEL.say(&ctx, message.build()) {
-        println!("Error sending message: {:?}", why);
+        error!("Error sending message: {:?}", why);
     }
 
     let mut message = MessageBuilder::new();
     message.push(format!("Say hi to {} in ", new_member.display_name()));
     message.mention(&config::WELCOME_CHANNEL);
     if let Err(why) = config::MAIN_CHANNEL.say(&ctx, message.build()) {
-        println!("Error sending message: {:?}", why);
+        error!("Error sending message: {:?}", why);
     }
 
     if let Err(why) = new_member.add_role(&ctx.http, config::UNREGISTERED_MEMBER_ROLE) {
-        println!("Error adding user role: {:?}", why);
+        error!("Error adding user role: {:?}", why);
     };
 }
 

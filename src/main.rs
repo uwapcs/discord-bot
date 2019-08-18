@@ -1,6 +1,12 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate log;
+extern crate simplelog;
+use simplelog::*;
+use std::fs::File;
+
 use serenity::{
     model::{channel, channel::Message, gateway::Ready, guild::Member},
     prelude::*,
@@ -15,7 +21,7 @@ macro_rules! e {
     ($error: literal, $x:expr) => {
         match $x {
             Ok(_) => (),
-            Err(why) => eprintln!($error, why),
+            Err(why) => error!($error, why),
         }
     };
 }
@@ -102,11 +108,20 @@ impl EventHandler for Handler {
     //
     // In this case, just print what the current user's username is.
     fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        info!("{} is connected!", ready.user.name);
     }
 }
 
 fn main() {
+    CombinedLogger::init(vec![
+        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap(),
+        WriteLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            File::create("ucc-bot.log").unwrap(),
+        ),
+    ])
+    .unwrap();
     // Configure the client with your Discord bot token in the environment.
     let token = config::DISCORD_TOKEN;
 
@@ -120,6 +135,6 @@ fn main() {
     // Shards will automatically attempt to reconnect, and will perform
     // exponential backoff until it reconnects.
     if let Err(why) = client.start() {
-        println!("Client error: {:?}", why);
+        error!("Client error: {:?}", why);
     }
 }

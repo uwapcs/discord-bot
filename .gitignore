@@ -2,3 +2,4 @@
 Cargo.lock
 **/*.rs.bk
 src/discord_token
+ucc-bot.log

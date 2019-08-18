@@ -12,7 +12,7 @@ macro_rules! e {
     ($error: literal, $x:expr) => {
         match $x {
             Ok(_) => (),
-            Err(why) => eprintln!($error, why),
+            Err(why) => error!($error, why),
         }
     };
 }
@@ -78,9 +78,9 @@ impl Commands {
 }
 
 fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
-    println!("{} created a motion {}", msg.author.name, topic);
+    info!("{} created a motion {}", msg.author.name, topic);
     if let Err(why) = msg.delete(ctx) {
-        println!("Error deleting motion prompt: {:?}", why);
+        error!("Error deleting motion prompt: {:?}", why);
     }
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
@@ -115,14 +115,14 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
         m
     }) {
         Err(why) => {
-            println!("Error creating motion: {:?}", why);
+            error!("Error creating motion: {:?}", why);
         }
         Ok(_) => {}
     }
 }
 
 fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
-    println!("{} created a poll {}", msg.author.name, topic);
+    info!("{} created a poll {}", msg.author.name, topic);
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
             embed.author(|a| {
@@ -151,11 +151,11 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
         m
     }) {
         Err(why) => {
-            println!("Error sending message: {:?}", why);
+            error!("Error sending message: {:?}", why);
         }
         Ok(_) => {
             if let Err(why) = msg.delete(ctx) {
-                println!("Error deleting motion prompt: {:?}", why);
+                error!("Error deleting motion prompt: {:?}", why);
             }
         }
     }
@@ -174,7 +174,7 @@ lazy_static! {
 fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
     let mut cached_motions = MOTIONS_CACHE.lock().unwrap();
     if !cached_motions.contains_key(&msg.id) {
-        println!("Initialising representation of motion {:?}", msg.id);
+        info!("Initialising representation of motion {:?}", msg.id);
         let this_motion = MotionInfo {
             votes: {
                 let mut m = HashMap::new();
@@ -204,7 +204,7 @@ fn set_cached_motion(id: &serenity::model::id::MessageId, motion_info: MotionInf
     if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(id) {
         *motion = motion_info;
     } else {
-        println!("{}", "Couldn't find motion in cache to set");
+        warn!("{}", "Couldn't find motion in cache to set");
     }
 }
 
@@ -250,7 +250,7 @@ fn update_motion(
     let old_embed = msg.embeds[0].clone();
     let topic = old_embed.clone().title.unwrap();
 
-    println!(
+    info!(
         "  {:10} {:6} {} on {}",
         user.name,
         change,
@@ -271,7 +271,7 @@ fn update_motion(
                 format!("{}\n_was_ {}", status, last_status_full),
                 true,
             );
-            println!("Motion to {} now {}", topic, status);
+            info!("Motion to {} now {}", topic, status);
             //
             let mut message = MessageBuilder::new();
             message.push_bold(topic);
@@ -279,7 +279,7 @@ fn update_motion(
             message.push_bold(status);
             message.push_italic(format!(" (was {})", last_status));
             if let Err(why) = config::ANNOUNCEMENT_CHANNEL.say(&ctx.http, message.build()) {
-                println!("Error sending message: {:?}", why);
+                error!("Error sending message: {:?}", why);
             };
         }
     };
@@ -336,7 +336,7 @@ fn update_motion(
             e
         })
     }) {
-        println!("Error updating motion: {:?}", why);
+        error!("Error updating motion: {:?}", why);
     }
 }
 
@@ -357,7 +357,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                 {
                                     if a_user.id.0 == user.id.0 {
                                         if let Err(why) = add_reaction.delete(&ctx) {
-                                            println!("Error deleting react: {:?}", why);
+                                            error!("Error deleting react: {:?}", why);
                                         };
                                         return;
                                     }
@@ -367,7 +367,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                 .contains(&add_reaction.emoji.as_data().as_str())
                             {
                                 if let Err(why) = add_reaction.delete(&ctx) {
-                                    println!("Error deleting react: {:?}", why);
+                                    error!("Error deleting react: {:?}", why);
                                 };
                                 return;
                             }
@@ -390,21 +390,21 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                     .contains(&add_reaction.emoji.as_data().as_str())
                                 {
                                     if let Err(why) = add_reaction.delete(&ctx) {
-                                        println!("Error deleting react: {:?}", why);
+                                        error!("Error deleting react: {:?}", why);
                                     };
                                     return;
                                 }
                             }
                         }
                         Err(why) => {
-                            println!("Error getting user role: {:?}", why);
+                            error!("Error getting user role: {:?}", why);
                         }
                     }
                 }
             }
         }
         Err(why) => {
-            println!("Error processing react: {:?}", why);
+            error!("Error processing react: {:?}", why);
         }
     }
 }
@@ -427,7 +427,7 @@ pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
             }
         }
         Err(why) => {
-            println!("Error getting user role: {:?}", why);
+            error!("Error getting user role: {:?}", why);
         }
     }
 }
