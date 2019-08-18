@@ -357,7 +357,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                     if let Err(why) = add_reaction.delete(&ctx) {
                                         error!("Error deleting react: {:?}", why);
                                     };
-                                    return;
+                                    return; 
                                 }
                             }
                         }
