@@ -3,6 +3,8 @@ use serenity::{
     prelude::*,
     utils::MessageBuilder,
 };
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 use crate::config;
 
@@ -77,6 +79,9 @@ impl Commands {
 
 fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
     println!("{} created a motion {}", msg.author.name, topic);
+    if let Err(why) = msg.delete(ctx) {
+        println!("Error deleting motion prompt: {:?}", why);
+    }
     match msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
             embed.author(|a| {
@@ -110,13 +115,9 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
         m
     }) {
         Err(why) => {
-            println!("Error sending message: {:?}", why);
+            println!("Error creating motion: {:?}", why);
         }
-        Ok(_) => {
-            if let Err(why) = msg.delete(ctx) {
-                println!("Error deleting motion prompt: {:?}", why);
-            }
-        }
+        Ok(_) => {}
     }
 }
 
@@ -160,6 +161,53 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
     }
 }
 
+#[derive(Debug, Clone)]
+struct MotionInfo {
+    votes: HashMap<&'static str, Vec<serenity::model::user::User>>,
+}
+
+lazy_static! {
+    static ref MOTIONS_CACHE: Mutex<HashMap<serenity::model::id::MessageId, MotionInfo>> =
+        Mutex::new(HashMap::new());
+}
+
+fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
+    let mut cached_motions = MOTIONS_CACHE.lock().unwrap();
+    if !cached_motions.contains_key(&msg.id) {
+        println!("Initialising representation of motion {:?}", msg.id);
+        let this_motion = MotionInfo {
+            votes: {
+                let mut m = HashMap::new();
+                m.insert(
+                    config::FOR_VOTE,
+                    msg.reaction_users(ctx, config::FOR_VOTE, None, None)
+                        .unwrap(),
+                );
+                m.insert(
+                    config::AGAINST_VOTE,
+                    msg.reaction_users(ctx, config::AGAINST_VOTE, None, None)
+                        .unwrap(),
+                );
+                m.insert(
+                    config::ABSTAIN_VOTE,
+                    msg.reaction_users(ctx, config::ABSTAIN_VOTE, None, None)
+                        .unwrap(),
+                );
+                m
+            },
+        };
+        cached_motions.insert(msg.id, this_motion);
+    }
+    return (*cached_motions.get(&msg.id).unwrap()).clone();
+}
+fn set_cached_motion(id: &serenity::model::id::MessageId, motion_info: MotionInfo) {
+    if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(id) {
+        *motion = motion_info;
+    } else {
+        println!("{}", "Couldn't find motion in cache to set");
+    }
+}
+
 fn update_motion(
     ctx: &Context,
     msg: &mut Message,
@@ -167,50 +215,33 @@ fn update_motion(
     change: &str,
     reaction: channel::Reaction,
 ) {
-    let for_votes = msg
-        .reaction_users(ctx, config::FOR_VOTE, None, None)
-        .unwrap()
-        .len() as isize
-        - 1;
-    let against_votes = msg
-        .reaction_users(ctx, config::AGAINST_VOTE, None, None)
-        .unwrap()
-        .len() as isize
-        - 1;
-    let abstain_votes = msg
-        .reaction_users(ctx, config::ABSTAIN_VOTE, None, None)
-        .unwrap()
-        .len() as isize
-        - 1;
+    let motion_info: MotionInfo = get_cached_motion(ctx, msg);
 
-    let strength_buff = |react: &str| {
-        msg.reaction_users(ctx, react, None, None)
-            .unwrap()
-            .iter()
-            .filter(
-                |u| match u.has_role(ctx, config::SERVER_ID, config::TIEBREAKER_ROLE) {
-                    Ok(true) => true,
-                    _ => false,
-                },
-            )
-            .count()
-            > 0
+    let for_votes = motion_info.votes.get(config::FOR_VOTE).unwrap().len() as isize - 1;
+    let against_votes = motion_info.votes.get(config::AGAINST_VOTE).unwrap().len() as isize - 1;
+    let abstain_votes = motion_info.votes.get(config::ABSTAIN_VOTE).unwrap().len() as isize - 1;
+
+    let has_tiebreaker = |users: &Vec<serenity::model::user::User>| {
+        users.iter().any(|u| {
+            u.has_role(ctx, config::SERVER_ID, config::TIEBREAKER_ROLE)
+                .unwrap()
+        })
     };
 
     let for_strength = for_votes as f32
-        + (if strength_buff(config::FOR_VOTE) {
+        + (if has_tiebreaker(motion_info.votes.get(config::FOR_VOTE).unwrap()) {
             0.5
         } else {
             0.0
         });
     let against_strength = against_votes as f32
-        + (if strength_buff(config::AGAINST_VOTE) {
+        + (if has_tiebreaker(motion_info.votes.get(config::AGAINST_VOTE).unwrap()) {
             0.5
         } else {
             0.0
         });
     let abstain_strength = abstain_votes as f32
-        + (if strength_buff(config::ABSTAIN_VOTE) {
+        + (if has_tiebreaker(motion_info.votes.get(config::ABSTAIN_VOTE).unwrap()) {
             0.5
         } else {
             0.0
@@ -341,6 +372,15 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                 return;
                             }
                             if user.id.0 != config::BOT_ID {
+                                let mut motion_info = get_cached_motion(&ctx, &message);
+                                if let Some(vote) = motion_info
+                                    .votes
+                                    .get_mut(add_reaction.emoji.as_data().as_str())
+                                {
+                                    vote.retain(|u| u.id != user.id);
+                                    vote.push(user.clone());
+                                }
+                                set_cached_motion(&message.id, motion_info);
                                 update_motion(&ctx, &mut message, &user, "add", add_reaction);
                             }
                         }
@@ -374,6 +414,14 @@ pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
         Ok(mut message) => {
             if message.author.id.0 == config::BOT_ID {
                 if let Ok(user) = removed_reaction.user(&ctx) {
+                    let mut motion_info = get_cached_motion(&ctx, &message);
+                    if let Some(vote) = motion_info
+                        .votes
+                        .get_mut(removed_reaction.emoji.as_data().as_str())
+                    {
+                        vote.retain(|u| u.id != user.id);
+                    }
+                    set_cached_motion(&message.id, motion_info);
                     update_motion(&ctx, &mut message, &user, "remove", removed_reaction);
                 }
             }
