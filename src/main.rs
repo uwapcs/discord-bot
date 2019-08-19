@@ -35,51 +35,52 @@ impl EventHandler for Handler {
     // Event handlers are dispatched through a threadpool, and so multiple
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
-        if msg.content.starts_with(config::COMMAND_PREFIX) {
-            let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
-            match message_content[0] {
-                "register" => {
-                    user_management::Commands::register(ctx, msg.clone(), message_content[1])
-                }
-                "join" => {
-                    user_management::Commands::join(ctx, msg.clone(), message_content[1]);
-                }
-                "move" => {
-                    voting::Commands::move_something(ctx, msg.clone(), message_content[1]);
-                }
-                "motion" => {
-                    voting::Commands::motion(ctx, msg.clone(), message_content[1]);
-                }
-                "poll" => {
-                    voting::Commands::poll(ctx, msg.clone(), message_content[1]);
-                }
-                "cowsay" => {
-                    voting::Commands::cowsay(ctx, msg.clone(), message_content[1]);
-                }
-                "help" => {
-                    let mut message = MessageBuilder::new();
-                    message.push_line(format!(
-                        "Use {}move <action> to make a circular motion",
-                        config::COMMAND_PREFIX
-                    ));
-                    message.push_line(format!(
-                        "Use {}poll <proposal> to see what people think about something",
-                        config::COMMAND_PREFIX
-                    ));
-                    e!(
-                        "Error sending message: {:?}",
-                        msg.channel_id.say(&ctx.http, message.build())
-                    );
-                }
-                _ => {
-                    e!(
-                        "Error sending message: {:?}",
-                        msg.channel_id.say(
-                            &ctx.http,
-                            format!("Unrecognised command. Try {}help", config::COMMAND_PREFIX)
-                        )
-                    );
-                }
+        if !(msg.content.starts_with(config::COMMAND_PREFIX)) {
+            return;
+        }
+        let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
+        match message_content[0] {
+            "register" => {
+                user_management::Commands::register(ctx, msg.clone(), message_content[1])
+            }
+            "join" => {
+                user_management::Commands::join(ctx, msg.clone(), message_content[1]);
+            }
+            "move" => {
+                voting::Commands::move_something(ctx, msg.clone(), message_content[1]);
+            }
+            "motion" => {
+                voting::Commands::motion(ctx, msg.clone(), message_content[1]);
+            }
+            "poll" => {
+                voting::Commands::poll(ctx, msg.clone(), message_content[1]);
+            }
+            "cowsay" => {
+                voting::Commands::cowsay(ctx, msg.clone(), message_content[1]);
+            }
+            "help" => {
+                let mut message = MessageBuilder::new();
+                message.push_line(format!(
+                    "Use {}move <action> to make a circular motion",
+                    config::COMMAND_PREFIX
+                ));
+                message.push_line(format!(
+                    "Use {}poll <proposal> to see what people think about something",
+                    config::COMMAND_PREFIX
+                ));
+                e!(
+                    "Error sending message: {:?}",
+                    msg.channel_id.say(&ctx.http, message.build())
+                );
+            }
+            _ => {
+                e!(
+                    "Error sending message: {:?}",
+                    msg.channel_id.say(
+                        &ctx.http,
+                        format!("Unrecognised command. Try {}help", config::COMMAND_PREFIX)
+                    )
+                );
             }
         }
     }
@@ -166,16 +167,15 @@ fn main() {
 }
 
 fn message_type(message: &Message) -> &'static str {
-    if message.embeds.len() > 0 {
-        let title: String = message.embeds[0].title.clone().unwrap();
-        let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
-        let first_word_of_title = words_of_title[0];
-        return match first_word_of_title {
-            "Motion" => "motion",
-            "Poll" => "poll",
-            _ => "misc",
-        };
-    } else {
+    if message.embeds.len() <= 0 {
         return "misc";
     }
+    let title: String = message.embeds[0].title.clone().unwrap();
+    let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
+    let first_word_of_title = words_of_title[0];
+    return match first_word_of_title {
+        "Motion" => "motion",
+        "Poll" => "poll",
+        _ => "misc",
+    };
 }

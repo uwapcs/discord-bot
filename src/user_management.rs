@@ -51,51 +51,51 @@ impl Commands {
     }
     pub fn register(ctx: Context, msg: Message, content: &str) {
         let name = content;
-        if name.len() > 0 {
-            e!(
-                "Unable to get member: {:?}",
-                serenity::model::id::GuildId(config::SERVER_ID)
-                    .member(ctx.http.clone(), msg.author.id)
-                    .map(|mut member| {
-                        e!(
-                            "Unable to remove role: {:?}",
-                            member.remove_role(&ctx.http, config::UNREGISTERED_MEMBER_ROLE)
-                        );
-                        e!(
-                            "Unable to edit nickname: {:?}",
-                            member
-                                .edit(&ctx.http, |m| {
-                                    let mut rng = rand::thread_rng();
-                                    m.nickname(format!(
-                                        "{}, {}",
-                                        name,
-                                        [
-                                            "The Big Cheese",
-                                            "The One and Only",
-                                            "The Exalted One",
-                                            "not to be trusted",
-                                            "The Scoundrel",
-                                            "A big fish in a small pond",
-                                        ][rng.gen_range(0, 5)]
-                                    ));
-                                    m
-                                })
-                                .map(|()| {
-                                    e!(
-                                        "Unable to add role: {:?}",
-                                        member.add_role(&ctx.http, config::REGISTERED_MEMBER_ROLE)
-                                    );
-                                })
-                        );
-                    })
-            );
-            e!("Error deleting register message: {:?}", msg.delete(ctx));
-        } else {
+        if name.len() <= 0 {
             e!(
                 "Error sending message: {:?}",
                 msg.channel_id
                     .say(&ctx.http, "Usage: !register <ucc username>")
             );
+            return;
         }
+        e!(
+            "Unable to get member: {:?}",
+            serenity::model::id::GuildId(config::SERVER_ID)
+                .member(ctx.http.clone(), msg.author.id)
+                .map(|mut member| {
+                    e!(
+                        "Unable to remove role: {:?}",
+                        member.remove_role(&ctx.http, config::UNREGISTERED_MEMBER_ROLE)
+                    );
+                    e!(
+                        "Unable to edit nickname: {:?}",
+                        member
+                            .edit(&ctx.http, |m| {
+                                let mut rng = rand::thread_rng();
+                                m.nickname(format!(
+                                    "{}, {}",
+                                    name,
+                                    [
+                                        "The Big Cheese",
+                                        "The One and Only",
+                                        "The Exalted One",
+                                        "not to be trusted",
+                                        "The Scoundrel",
+                                        "A big fish in a small pond",
+                                    ][rng.gen_range(0, 5)]
+                                ));
+                                m
+                            })
+                            .map(|()| {
+                                e!(
+                                    "Unable to add role: {:?}",
+                                    member.add_role(&ctx.http, config::REGISTERED_MEMBER_ROLE)
+                                );
+                            })
+                    );
+                })
+        );
+        e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
 }

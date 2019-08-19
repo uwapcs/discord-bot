@@ -23,15 +23,15 @@ impl Commands {
         let motion = content;
         if motion.len() > 0 {
             create_motion(&ctx, &msg, motion);
-        } else {
-            e!(
-                "Error sending message: {:?}",
-                msg.channel_id.say(
-                    &ctx.http,
-                    "If there's something you want to motion, put it after the !move keyword",
-                )
-            );
+            return;
         }
+        e!(
+            "Error sending message: {:?}",
+            msg.channel_id.say(
+                &ctx.http,
+                "If there's something you want to motion, put it after the !move keyword",
+            )
+        );
     }
     pub fn motion(ctx: Context, msg: Message, _content: &str) {
         e!("Error sending message: {:?}",
@@ -44,15 +44,15 @@ impl Commands {
         let topic = content;
         if topic.len() > 0 {
             create_poll(&ctx, &msg, topic);
-        } else {
-            e!(
-                "Error sending message: {:?}",
-                msg.channel_id.say(
-                    &ctx.http,
-                    "If there's something you want to motion, put it after the !move keyword",
-                )
-            );
+            return;
         }
+        e!(
+            "Error sending message: {:?}",
+            msg.channel_id.say(
+                &ctx.http,
+                "If there's something you want to motion, put it after the !move keyword",
+            )
+        );
     }
     pub fn cowsay(ctx: Context, msg: Message, content: &str) {
         let mut text = content.to_owned();
@@ -203,9 +203,9 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
 fn set_cached_motion(id: &serenity::model::id::MessageId, motion_info: MotionInfo) {
     if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(id) {
         *motion = motion_info;
-    } else {
-        warn!("{}", "Couldn't find motion in cache to set");
+        return;
     }
+    warn!("{}", "Couldn't find motion in cache to set");
 }
 
 fn update_motion(
@@ -357,7 +357,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                                     if let Err(why) = add_reaction.delete(&ctx) {
                                         error!("Error deleting react: {:?}", why);
                                     };
-                                    return; 
+                                    return;
                                 }
                             }
                         }
