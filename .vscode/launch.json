@@ -8,10 +8,11 @@
             "name": "(gdb) Launch",
             "type": "gdb",
             "request": "launch",
+            "env": { "RUST_BACKTRACE": 1 },
             "target": "${workspaceFolder}/target/debug/ucc-discord-bot",
             "cwd": "${workspaceFolder}",
             "gdbpath": "/home/tec/.cargo/bin/rust-gdb",
-            "arguments": "read latest -e pdf -o"
+            "arguments": ""
         }
     ]
 }
