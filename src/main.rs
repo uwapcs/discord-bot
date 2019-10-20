@@ -40,9 +40,10 @@ impl EventHandler for Handler {
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
         match message_content[0] {
-            "register" => {
-                user_management::Commands::register(ctx, msg.clone(), message_content[1])
+            "say" => {
+                println!("{:#?}", msg.content);
             }
+            "register" => user_management::Commands::register(ctx, msg.clone(), message_content[1]),
             "join" => {
                 user_management::Commands::join(ctx, msg.clone(), message_content[1]);
             }
@@ -88,8 +89,8 @@ impl EventHandler for Handler {
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 != config::BOT_ID {
-                    return
+                if message.author.id.0 == config::BOT_ID {
+                    return;
                 }
                 match message_type(&message) {
                     "motion" => {
@@ -105,8 +106,8 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 != config::BOT_ID {
-                    return
+                if message.author.id.0 == config::BOT_ID {
+                    return;
                 }
                 match message_type(&message) {
                     "motion" => {
@@ -168,7 +169,10 @@ fn main() {
 
 fn message_type(message: &Message) -> &'static str {
     if message.embeds.len() <= 0 {
-        return "misc";
+        return match message.content.splitn(2, ' ').next().unwrap() {
+            "Role" => "role",
+            _ => "misc",
+        };
     }
     let title: String = message.embeds[0].title.clone().unwrap();
     let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
