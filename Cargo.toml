@@ -5,8 +5,8 @@ authors = ["tec <tec@ucc.gu.uwa.edu.au>"]
 edition = "2018"
 
 [dependencies]
-serenity = "0.6.3"
-rand = "0.7.0"
-lazy_static = "1.3.0"
-log = "0.4.8"
-simplelog = "0.6.0"
+serenity = "^0.7.1"
+rand = "^0.7.2"
+lazy_static = "^1.4.0"
+log = "^0.4.8"
+simplelog = "^0.7.4"
