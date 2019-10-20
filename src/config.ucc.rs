@@ -13,7 +13,7 @@ pub static WELCOME_CHANNEL: serenity::model::id::ChannelId =
 pub static ANNOUNCEMENT_CHANNEL: serenity::model::id::ChannelId =
     serenity::model::id::ChannelId(264411219627212801);
 
-pub static BOT_ID: u64 = 607078903969742848;
+pub static BOT_ID: u64 = 635407267881156618;
 
 pub static VOTE_POOL_SIZE: i8 = 7;
 pub static VOTE_ROLE: u64 = 269817189966544896;
