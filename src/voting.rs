@@ -230,19 +230,19 @@ fn update_motion(
 
     let for_strength = for_votes as f32
         + (if has_tiebreaker(motion_info.votes.get(config::FOR_VOTE).unwrap()) {
-            0.5
+            0.25
         } else {
             0.0
         });
     let against_strength = against_votes as f32
         + (if has_tiebreaker(motion_info.votes.get(config::AGAINST_VOTE).unwrap()) {
-            0.5
+            0.25
         } else {
             0.0
         });
     let abstain_strength = abstain_votes as f32
         + (if has_tiebreaker(motion_info.votes.get(config::ABSTAIN_VOTE).unwrap()) {
-            0.5
+            0.25
         } else {
             0.0
         });
