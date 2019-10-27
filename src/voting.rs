@@ -306,10 +306,10 @@ fn update_motion(
                 .expect("No previous status")
                 .clone()
                 .value;
-            if for_strength > (config::VOTE_POOL_SIZE / 2) as f32 {
+            if for_strength > (config::VOTE_POOL_SIZE as f32 / 2.0) {
                 e.colour(serenity::utils::Colour::TEAL);
                 update_status(e, "Passed", last_status_full, &topic);
-            } else if against_strength + abstain_strength > (config::VOTE_POOL_SIZE / 2) as f32 {
+            } else if against_strength + abstain_strength > (config::VOTE_POOL_SIZE as f32 / 2.0) {
                 e.colour(serenity::utils::Colour::RED);
                 update_status(e, "Failed", last_status_full, &topic);
             } else {
