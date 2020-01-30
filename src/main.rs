@@ -17,6 +17,8 @@ mod config;
 mod user_management;
 mod voting;
 
+use config::CONFIG;
+
 macro_rules! e {
     ($error: literal, $x:expr) => {
         match $x {
@@ -35,7 +37,7 @@ impl EventHandler for Handler {
     // Event handlers are dispatched through a threadpool, and so multiple
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
-        if !(msg.content.starts_with(config::COMMAND_PREFIX)) {
+        if !(msg.content.starts_with(CONFIG.command_prefix)) {
             return;
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
@@ -63,11 +65,11 @@ impl EventHandler for Handler {
                 let mut message = MessageBuilder::new();
                 message.push_line(format!(
                     "Use {}move <action> to make a circular motion",
-                    config::COMMAND_PREFIX
+                    &CONFIG.command_prefix
                 ));
                 message.push_line(format!(
                     "Use {}poll <proposal> to see what people think about something",
-                    config::COMMAND_PREFIX
+                    &CONFIG.command_prefix
                 ));
                 e!(
                     "Error sending message: {:?}",
@@ -79,7 +81,7 @@ impl EventHandler for Handler {
                     "Error sending message: {:?}",
                     msg.channel_id.say(
                         &ctx.http,
-                        format!("Unrecognised command. Try {}help", config::COMMAND_PREFIX)
+                        format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)
                     )
                 );
             }
@@ -89,7 +91,7 @@ impl EventHandler for Handler {
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 != config::BOT_ID || add_reaction.user_id == config::BOT_ID {
+                if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id {
                     return;
                 }
                 match message_type(&message) {
@@ -106,7 +108,7 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 != config::BOT_ID || removed_reaction.user_id == config::BOT_ID {
+                if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id {
                     return;
                 }
                 match message_type(&message) {
@@ -150,6 +152,8 @@ fn main() {
         ),
     ])
     .unwrap();
+
+
     // Configure the client with your Discord bot token in the environment.
     let token = config::DISCORD_TOKEN;
 

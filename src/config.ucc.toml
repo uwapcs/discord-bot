@@ -1,0 +1,24 @@
+server_id = 264401248676085760
+#ucc
+main_channel    = 264401248676085760
+#welcome
+welcome_channel    = 606750983699300372
+#committee
+announcement_channel    = 264411219627212801
+
+bot_id = 635407267881156618
+
+vote_pool_size = 7
+vote_role = 269817189966544896
+tiebreaker_role = 635370432568098817
+unregistered_member_role = 0 # does not exist
+registered_member_role = 0 # does not exist
+
+command_prefix = "!"
+
+for_vote = "👍"
+against_vote = "👎"
+abstain_vote = "🙊"
+approve_react = "⬆"
+disapprove_react = "⬇"
+unsure_react = "❔"
