@@ -5,7 +5,7 @@ extern crate lazy_static;
 extern crate log;
 extern crate simplelog;
 use simplelog::*;
-use std::fs::File;
+use std::fs::{File, read_to_string};
 
 use serenity::{
     model::{channel, channel::Message, gateway::Ready, guild::Member},
@@ -155,7 +155,7 @@ fn main() {
 
 
     // Configure the client with your Discord bot token in the environment.
-    let token = config::DISCORD_TOKEN;
+    let token = read_to_string("discord_token").unwrap();
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
