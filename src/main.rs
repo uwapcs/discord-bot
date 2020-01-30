@@ -155,7 +155,7 @@ fn main() {
 
 
     // Configure the client with your Discord bot token in the environment.
-    let token = CONFIG.discord_token;
+    let token = config::DISCORD_TOKEN;
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement

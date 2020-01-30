@@ -1,28 +1,20 @@
 use serenity;
+use std::fs;
+use serde::Deserialize;
+use toml;
 
-pub const CONFIG: UccbotConfig = UccbotConfig {
-    discord_token: include_str!("discord_token"),
-    server_id: 606351521117896704,
-    main_channel: serenity::model::id::ChannelId(606351521117896706),
-    welcome_channel: serenity::model::id::ChannelId(606351613816209418),
-    announcement_channel: serenity::model::id::ChannelId(606351521117896706),
-    bot_id: 607078903969742848,
-    vote_pool_size: 2,
-    vote_role: 607478818038480937,
-    tiebreaker_role: 607509283483025409,
-    unregistered_member_role: 608282247350714408,
-    registered_member_role: 608282133118582815,
-    command_prefix: "!",
-    for_vote: "👍",
-    against_vote: "👎",
-    abstain_vote: "🙊",
-    approve_react: "⬆",
-    disapprove_react: "⬇",
-    unsure_react: "❔",
-};
+lazy_static! {
+    static ref CONFIG_FILE: String = fs::read_to_string("config.toml").unwrap();
+}
 
+lazy_static! {
+    pub static ref CONFIG: UccbotConfig = toml::from_str(&CONFIG_FILE).unwrap();
+}
+
+pub static DISCORD_TOKEN: &str = include_str!("discord_token");
+
+#[derive(Deserialize)]
 pub struct UccbotConfig {
-    pub discord_token: &'static str,
     pub server_id: u64,
     // #general
     pub main_channel: serenity::model::id::ChannelId,
