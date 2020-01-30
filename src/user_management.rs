@@ -5,7 +5,7 @@ use serenity::{
     utils::MessageBuilder,
 };
 
-use crate::config;
+use crate::config::CONFIG;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -23,18 +23,18 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("! Would you care to introduce yourself?");
     message.push_line("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content");
-    if let Err(why) = config::WELCOME_CHANNEL.say(&ctx, message.build()) {
+    if let Err(why) = CONFIG.welcome_channel.say(&ctx, message.build()) {
         error!("Error sending message: {:?}", why);
     }
 
     let mut message = MessageBuilder::new();
     message.push(format!("Say hi to {} in ", new_member.display_name()));
-    message.mention(&config::WELCOME_CHANNEL);
-    if let Err(why) = config::MAIN_CHANNEL.say(&ctx, message.build()) {
+    message.mention(&CONFIG.welcome_channel);
+    if let Err(why) = CONFIG.main_channel.say(&ctx, message.build()) {
         error!("Error sending message: {:?}", why);
     }
 
-    if let Err(why) = new_member.add_role(&ctx.http, config::UNREGISTERED_MEMBER_ROLE) {
+    if let Err(why) = new_member.add_role(&ctx.http, CONFIG.unregistered_member_role) {
         error!("Error adding user role: {:?}", why);
     };
 }
@@ -44,7 +44,7 @@ impl Commands {
     pub fn join(ctx: Context, msg: Message, _content: &str) {
         e!(
             "Unable to get user: {:?}",
-            serenity::model::id::GuildId(config::SERVER_ID)
+            serenity::model::id::GuildId(CONFIG.server_id)
                 .member(ctx.http.clone(), msg.author.id)
                 .map(|member| new_member(&ctx, member))
         );
@@ -61,12 +61,12 @@ impl Commands {
         }
         e!(
             "Unable to get member: {:?}",
-            serenity::model::id::GuildId(config::SERVER_ID)
+            serenity::model::id::GuildId(CONFIG.server_id)
                 .member(ctx.http.clone(), msg.author.id)
                 .map(|mut member| {
                     e!(
                         "Unable to remove role: {:?}",
-                        member.remove_role(&ctx.http, config::UNREGISTERED_MEMBER_ROLE)
+                        member.remove_role(&ctx.http, CONFIG.unregistered_member_role)
                     );
                     e!(
                         "Unable to edit nickname: {:?}",
@@ -90,7 +90,7 @@ impl Commands {
                             .map(|()| {
                                 e!(
                                     "Unable to add role: {:?}",
-                                    member.add_role(&ctx.http, config::REGISTERED_MEMBER_ROLE)
+                                    member.add_role(&ctx.http, CONFIG.registered_member_role)
                                 );
                             })
                     );

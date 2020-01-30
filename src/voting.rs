@@ -6,7 +6,7 @@ use serenity::{
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::config;
+use crate::config::CONFIG;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -96,7 +96,7 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed.colour(serenity::utils::Colour::GOLD);
             embed.title(format!("Motion to {}", topic));
             let mut desc = MessageBuilder::new();
-            desc.role(config::VOTE_ROLE);
+            desc.role(CONFIG.vote_role);
             desc.push(" take a look at this motion from ");
             desc.mention(&msg.author);
             embed.description(desc.build());
@@ -106,11 +106,11 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             embed
         });
         m.reactions(vec![
-            config::FOR_VOTE,
-            config::AGAINST_VOTE,
-            config::ABSTAIN_VOTE,
-            config::APPROVE_REACT,
-            config::DISAPPROVE_REACT,
+            CONFIG.for_vote.to_string(),
+            CONFIG.against_vote.to_string(),
+            CONFIG.abstain_vote.to_string(),
+            CONFIG.approve_react.to_string(),
+            CONFIG.disapprove_react.to_string(),
         ]);
         m
     }) {
@@ -144,9 +144,9 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
             embed
         });
         m.reactions(vec![
-            config::APPROVE_REACT,
-            config::DISAPPROVE_REACT,
-            config::UNSURE_REACT,
+            CONFIG.approve_react.to_string(),
+            CONFIG.disapprove_react.to_string(),
+            CONFIG.unsure_react.to_string(),
         ]);
         m
     }) {
@@ -179,18 +179,18 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
             votes: {
                 let mut m = HashMap::new();
                 m.insert(
-                    config::FOR_VOTE,
-                    msg.reaction_users(ctx, config::FOR_VOTE, None, None)
+                    CONFIG.for_vote,
+                    msg.reaction_users(ctx, CONFIG.for_vote, None, None)
                         .unwrap(),
                 );
                 m.insert(
-                    config::AGAINST_VOTE,
-                    msg.reaction_users(ctx, config::AGAINST_VOTE, None, None)
+                    CONFIG.against_vote,
+                    msg.reaction_users(ctx, CONFIG.against_vote, None, None)
                         .unwrap(),
                 );
                 m.insert(
-                    config::ABSTAIN_VOTE,
-                    msg.reaction_users(ctx, config::ABSTAIN_VOTE, None, None)
+                    CONFIG.abstain_vote,
+                    msg.reaction_users(ctx, CONFIG.abstain_vote, None, None)
                         .unwrap(),
                 );
                 m
@@ -217,31 +217,31 @@ fn update_motion(
 ) {
     let motion_info: MotionInfo = get_cached_motion(ctx, msg);
 
-    let for_votes = motion_info.votes.get(config::FOR_VOTE).unwrap().len() as isize - 1;
-    let against_votes = motion_info.votes.get(config::AGAINST_VOTE).unwrap().len() as isize - 1;
-    let abstain_votes = motion_info.votes.get(config::ABSTAIN_VOTE).unwrap().len() as isize - 1;
+    let for_votes = motion_info.votes.get(&CONFIG.for_vote).unwrap().len() as isize - 1;
+    let against_votes = motion_info.votes.get(&CONFIG.against_vote).unwrap().len() as isize - 1;
+    let abstain_votes = motion_info.votes.get(&CONFIG.abstain_vote).unwrap().len() as isize - 1;
 
     let has_tiebreaker = |users: &Vec<serenity::model::user::User>| {
         users.iter().any(|u| {
-            u.has_role(ctx, config::SERVER_ID, config::TIEBREAKER_ROLE)
+            u.has_role(ctx, CONFIG.server_id, CONFIG.tiebreaker_role)
                 .unwrap()
         })
     };
 
     let for_strength = for_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(config::FOR_VOTE).unwrap()) {
+        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.for_vote).unwrap()) {
             0.25
         } else {
             0.0
         });
     let against_strength = against_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(config::AGAINST_VOTE).unwrap()) {
+        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.against_vote).unwrap()) {
             0.25
         } else {
             0.0
         });
     let abstain_strength = abstain_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(config::ABSTAIN_VOTE).unwrap()) {
+        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.abstain_vote).unwrap()) {
             0.25
         } else {
             0.0
@@ -278,7 +278,7 @@ fn update_motion(
             message.push(" is now ");
             message.push_bold(status);
             message.push_italic(format!(" (was {})", last_status));
-            if let Err(why) = config::ANNOUNCEMENT_CHANNEL.say(&ctx.http, message.build()) {
+            if let Err(why) = CONFIG.announcement_channel.say(&ctx.http, message.build()) {
                 error!("Error sending message: {:?}", why);
             };
         }
@@ -306,10 +306,10 @@ fn update_motion(
                 .expect("No previous status")
                 .clone()
                 .value;
-            if for_strength > (config::VOTE_POOL_SIZE as f32 / 2.0) {
+            if for_strength > (CONFIG.vote_pool_size as f32 / 2.0) {
                 e.colour(serenity::utils::Colour::TEAL);
                 update_status(e, "Passed", last_status_full, &topic);
-            } else if against_strength + abstain_strength > (config::VOTE_POOL_SIZE as f32 / 2.0) {
+            } else if against_strength + abstain_strength > (CONFIG.vote_pool_size as f32 / 2.0) {
                 e.colour(serenity::utils::Colour::RED);
                 update_status(e, "Failed", last_status_full, &topic);
             } else {
@@ -320,7 +320,7 @@ fn update_motion(
                 format!(
                     "Votes ({}/{})",
                     for_votes + against_votes + abstain_votes,
-                    config::VOTE_POOL_SIZE
+                    CONFIG.vote_pool_size
                 ),
                 format!(
                     "For: {}\nAgainst: {}\nAbstain: {}",
@@ -344,10 +344,10 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
     match add_reaction.message(&ctx.http) {
         Ok(mut message) => {
             if let Ok(user) = add_reaction.user(&ctx) {
-                match user.has_role(&ctx, config::SERVER_ID, config::VOTE_ROLE) {
+                match user.has_role(&ctx, CONFIG.server_id, CONFIG.vote_role) {
                     Ok(true) => {
                         // remove vote if already voted
-                        for react in [config::FOR_VOTE, config::AGAINST_VOTE, config::ABSTAIN_VOTE]
+                        for react in [CONFIG.for_vote, CONFIG.against_vote, CONFIG.abstain_vote]
                             .iter()
                             .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
                         {
@@ -362,7 +362,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                             }
                         }
                         // remove 'illegal' reacts
-                        if !config::ALLOWED_REACTS.contains(&add_reaction.emoji.as_data().as_str())
+                        if !CONFIG.allowed_reacts().contains(&add_reaction.emoji.as_data())
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);
@@ -382,7 +382,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                         update_motion(&ctx, &mut message, &user, "add", add_reaction);
                     }
                     Ok(false) => {
-                        if ![config::APPROVE_REACT, config::DISAPPROVE_REACT]
+                        if ![CONFIG.approve_react, CONFIG.disapprove_react]
                             .contains(&add_reaction.emoji.as_data().as_str())
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
