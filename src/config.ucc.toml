@@ -1,16 +1,13 @@
-server_id = 264401248676085760
-#ucc
-main_channel    = 264401248676085760
-#welcome
-welcome_channel    = 606750983699300372
-#committee
-announcement_channel    = 264411219627212801
+server_id = 264401248676085760 # ucc
+main_channel = 264401248676085760 # ucc
+welcome_channel = 606750983699300372 # welcome
+announcement_channel = 264411219627212801 # committee
 
 bot_id = 635407267881156618
 
-vote_pool_size = 7
-vote_role = 269817189966544896
-tiebreaker_role = 635370432568098817
+vote_pool_size = 7 # 4 exec + 3 ocm
+vote_role = 269817189966544896 # @committee
+tiebreaker_role = 635370432568098817 # @Presiding Presidenterino
 unregistered_member_role = 0 # does not exist
 registered_member_role = 0 # does not exist
 
