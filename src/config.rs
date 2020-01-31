@@ -11,8 +11,6 @@ lazy_static! {
     pub static ref CONFIG: UccbotConfig = toml::from_str(&CONFIG_FILE).unwrap();
 }
 
-pub static DISCORD_TOKEN: &str = include_str!("discord_token");
-
 #[derive(Deserialize)]
 pub struct UccbotConfig {
     pub server_id: u64,
