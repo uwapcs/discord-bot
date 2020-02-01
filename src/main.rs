@@ -5,7 +5,7 @@ extern crate lazy_static;
 extern crate log;
 extern crate simplelog;
 use simplelog::*;
-use std::fs::{File, read_to_string};
+use std::fs::{read_to_string, File};
 
 use serenity::{
     model::{channel, channel::Message, gateway::Ready, guild::Member},
@@ -61,6 +61,10 @@ impl EventHandler for Handler {
             "cowsay" => {
                 voting::Commands::cowsay(ctx, msg.clone(), message_content[1]);
             }
+            "logreact" => e!(
+                "Error sending message {:?}",
+                msg.channel_id.say(&ctx.http, "React to this to log the ID")
+            ),
             "help" => {
                 let mut message = MessageBuilder::new();
                 message.push_line(format!(
@@ -98,6 +102,13 @@ impl EventHandler for Handler {
                     "motion" => {
                         voting::reaction_add(ctx, add_reaction);
                     }
+                    "logreact" => {
+                        info!(
+                            "The react {:?} just added is {:?}",
+                            add_reaction.user(&ctx).unwrap().name,
+                            add_reaction.emoji.as_data()
+                        );
+                    }
                     _ => {}
                 }
             }
@@ -108,7 +119,8 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
-                if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id {
+                if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id
+                {
                     return;
                 }
                 match message_type(&message) {
@@ -153,7 +165,6 @@ fn main() {
     ])
     .unwrap();
 
-
     // Configure the client with your Discord bot token in the environment.
     let token = read_to_string("discord_token").unwrap();
 
@@ -173,8 +184,10 @@ fn main() {
 
 fn message_type(message: &Message) -> &'static str {
     if message.embeds.len() <= 0 {
+        // Get first word of message
         return match message.content.splitn(2, ' ').next().unwrap() {
             "Role" => "role",
+            "React" => "logreact",
             _ => "misc",
         };
     }
