@@ -7,6 +7,7 @@ extern crate simplelog;
 use simplelog::*;
 use std::fs::{read_to_string, File};
 
+use chrono::prelude::Utc;
 use serenity::{
     model::{channel, channel::Message, gateway::Ready, guild::Member},
     prelude::*,
@@ -61,10 +62,13 @@ impl EventHandler for Handler {
             "cowsay" => {
                 voting::Commands::cowsay(ctx, msg.clone(), message_content[1]);
             }
-            "logreact" => e!(
-                "Error sending message {:?}",
-                msg.channel_id.say(&ctx.http, "React to this to log the ID")
-            ),
+            "logreact" => {
+                e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
+                e!(
+                    "Error sending message {:?}",
+                    msg.channel_id.say(&ctx.http, "React to this to log the ID")
+                )
+            }
             "help" => {
                 let mut message = MessageBuilder::new();
                 message.push_line(format!(
@@ -103,10 +107,29 @@ impl EventHandler for Handler {
                         voting::reaction_add(ctx, add_reaction);
                     }
                     "logreact" => {
+                        let react_user = add_reaction.user(&ctx).unwrap();
+                        if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
+                            warn!(
+                                "The logreact message {} just tried to use is too old",
+                                react_user.name
+                            );
+                            return;
+                        }
                         info!(
-                            "The react {:?} just added is {:?}",
-                            add_reaction.user(&ctx).unwrap().name,
+                            "The react {} just added is {:?}",
+                            react_user.name,
                             add_reaction.emoji.as_data()
+                        );
+                        let mut msg = MessageBuilder::new();
+                        msg.push_italic(react_user.name);
+                        msg.push(format!(
+                            " wanted to know that {} is represented by ",
+                            add_reaction.emoji,
+                        ));
+                        msg.push_mono(add_reaction.emoji.as_data());
+                        e!(
+                            "Error sending message: {:?}",
+                            message.channel_id.say(&ctx.http, msg.build())
                         );
                     }
                     _ => {}
