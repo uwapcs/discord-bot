@@ -17,8 +17,10 @@ use serenity::{
 mod config;
 mod user_management;
 mod voting;
+mod util;
 
 use config::CONFIG;
+use util::get_string_from_react;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -109,6 +111,7 @@ impl EventHandler for Handler {
                     }
                     "logreact" => {
                         let react_user = add_reaction.user(&ctx).unwrap();
+                        let react_as_string = get_string_from_react(add_reaction.emoji.clone());
                         if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
                             warn!(
                                 "The logreact message {} just tried to use is too old",
@@ -119,7 +122,7 @@ impl EventHandler for Handler {
                         info!(
                             "The react {} just added is {:?}",
                             react_user.name,
-                            add_reaction.emoji.as_data()
+                            react_as_string
                         );
                         let mut msg = MessageBuilder::new();
                         msg.push_italic(react_user.name);
@@ -127,7 +130,7 @@ impl EventHandler for Handler {
                             " wanted to know that {} is represented by ",
                             add_reaction.emoji,
                         ));
-                        msg.push_mono(add_reaction.emoji.as_data());
+                        msg.push_mono(react_as_string);
                         e!(
                             "Error sending message: {:?}",
                             message.channel_id.say(&ctx.http, msg.build())

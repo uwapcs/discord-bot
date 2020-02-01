@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use crate::config::CONFIG;
+use crate::util::get_string_from_react;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -254,7 +255,7 @@ fn update_motion(
         "  {:10} {:6} {} on {}",
         user.name,
         change,
-        reaction.emoji.as_data().as_str(),
+        get_string_from_react(reaction.emoji),
         topic
     );
 
@@ -341,6 +342,7 @@ fn update_motion(
 }
 
 pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
+    let react_as_string = get_string_from_react(add_reaction.emoji.clone());
     match add_reaction.message(&ctx.http) {
         Ok(mut message) => {
             if let Ok(user) = add_reaction.user(&ctx) {
@@ -349,7 +351,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                         // remove vote if already voted
                         for react in [CONFIG.for_vote.to_string(), CONFIG.against_vote.to_string(), CONFIG.abstain_vote.to_string()]
                             .iter()
-                            .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
+                            .filter(|r| r != &&react_as_string)
                         {
                             for a_user in message.reaction_users(&ctx, react.as_str(), None, None).unwrap()
                             {
@@ -362,7 +364,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                             }
                         }
                         // remove 'illegal' reacts
-                        if !CONFIG.allowed_reacts().contains(&add_reaction.emoji.as_data())
+                        if !CONFIG.allowed_reacts().contains(&react_as_string)
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);
@@ -373,7 +375,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                         let mut motion_info = get_cached_motion(&ctx, &message);
                         if let Some(vote) = motion_info
                             .votes
-                            .get_mut(add_reaction.emoji.as_data().as_str())
+                            .get_mut(&react_as_string)
                         {
                             vote.retain(|u| u.id != user.id);
                             vote.push(user.clone());
@@ -383,7 +385,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                     }
                     Ok(false) => {
                         if ![CONFIG.approve_react.to_string(), CONFIG.disapprove_react.to_string()]
-                            .contains(&add_reaction.emoji.as_data())
+                            .contains(&react_as_string)
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);
@@ -410,7 +412,7 @@ pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
                 let mut motion_info = get_cached_motion(&ctx, &message);
                 if let Some(vote) = motion_info
                     .votes
-                    .get_mut(removed_reaction.emoji.as_data().as_str())
+                    .get_mut(&get_string_from_react(removed_reaction.emoji.clone()))
                 {
                     vote.retain(|u| u.id != user.id);
                 }
