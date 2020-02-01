@@ -5,9 +5,6 @@ use toml;
 
 lazy_static! {
     static ref CONFIG_FILE: String = fs::read_to_string("config.toml").unwrap();
-}
-
-lazy_static! {
     pub static ref CONFIG: UccbotConfig = toml::from_str(&CONFIG_FILE).unwrap();
 }
 
