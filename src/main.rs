@@ -66,7 +66,8 @@ impl EventHandler for Handler {
                 e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
                 e!(
                     "Error sending message {:?}",
-                    msg.channel_id.say(&ctx.http, "React to this to log the ID")
+                    msg.channel_id
+                        .say(&ctx.http, "React to this to log the ID (for the next 5min)")
                 )
             }
             "help" => {
