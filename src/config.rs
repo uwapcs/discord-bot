@@ -1,6 +1,6 @@
+use serde::Deserialize;
 use serenity;
 use std::fs;
-use serde::Deserialize;
 use toml;
 
 lazy_static! {
@@ -14,11 +14,8 @@ lazy_static! {
 #[derive(Deserialize)]
 pub struct UccbotConfig {
     pub server_id: u64,
-    // #general
     pub main_channel: serenity::model::id::ChannelId,
-    // #the-corner
     pub welcome_channel: serenity::model::id::ChannelId,
-    // #general
     pub announcement_channel: serenity::model::id::ChannelId,
     pub bot_id: u64,
     pub vote_pool_size: i8,
@@ -37,11 +34,13 @@ pub struct UccbotConfig {
 
 impl UccbotConfig {
     pub fn allowed_reacts(&self) -> Vec<String> {
-        vec!(self.for_vote.to_string(),
-        self.against_vote.to_string(),
-        self.abstain_vote.to_string(),
-        self.approve_react.to_string(),
-        self.disapprove_react.to_string(),
-        self.unsure_react.to_string())
+        vec![
+            self.for_vote.to_string(),
+            self.against_vote.to_string(),
+            self.abstain_vote.to_string(),
+            self.approve_react.to_string(),
+            self.disapprove_react.to_string(),
+            self.unsure_react.to_string(),
+        ]
     }
 }
