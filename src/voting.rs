@@ -163,7 +163,7 @@ fn create_poll(ctx: &Context, msg: &Message, topic: &str) {
 
 #[derive(Debug, Clone)]
 struct MotionInfo {
-    votes: HashMap<&'static str, Vec<serenity::model::user::User>>,
+    votes: HashMap<String, Vec<serenity::model::user::User>>,
 }
 
 lazy_static! {
@@ -179,18 +179,18 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
             votes: {
                 let mut m = HashMap::new();
                 m.insert(
-                    CONFIG.for_vote,
-                    msg.reaction_users(ctx, CONFIG.for_vote, None, None)
+                    CONFIG.for_vote.to_string(),
+                    msg.reaction_users(ctx, CONFIG.for_vote.to_string(), None, None)
                         .unwrap(),
                 );
                 m.insert(
-                    CONFIG.against_vote,
-                    msg.reaction_users(ctx, CONFIG.against_vote, None, None)
+                    CONFIG.against_vote.to_string(),
+                    msg.reaction_users(ctx, CONFIG.against_vote.to_string(), None, None)
                         .unwrap(),
                 );
                 m.insert(
-                    CONFIG.abstain_vote,
-                    msg.reaction_users(ctx, CONFIG.abstain_vote, None, None)
+                    CONFIG.abstain_vote.to_string(),
+                    msg.reaction_users(ctx, CONFIG.abstain_vote.to_string(), None, None)
                         .unwrap(),
                 );
                 m
@@ -347,11 +347,11 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                 match user.has_role(&ctx, CONFIG.server_id, CONFIG.vote_role) {
                     Ok(true) => {
                         // remove vote if already voted
-                        for react in [CONFIG.for_vote, CONFIG.against_vote, CONFIG.abstain_vote]
+                        for react in [CONFIG.for_vote.to_string(), CONFIG.against_vote.to_string(), CONFIG.abstain_vote.to_string()]
                             .iter()
                             .filter(|r| r != &&add_reaction.emoji.as_data().as_str())
                         {
-                            for a_user in message.reaction_users(&ctx, *react, None, None).unwrap()
+                            for a_user in message.reaction_users(&ctx, react.as_str(), None, None).unwrap()
                             {
                                 if a_user.id.0 == user.id.0 {
                                     if let Err(why) = add_reaction.delete(&ctx) {
@@ -382,8 +382,8 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                         update_motion(&ctx, &mut message, &user, "add", add_reaction);
                     }
                     Ok(false) => {
-                        if ![CONFIG.approve_react, CONFIG.disapprove_react]
-                            .contains(&add_reaction.emoji.as_data().as_str())
+                        if ![CONFIG.approve_react.to_string(), CONFIG.disapprove_react.to_string()]
+                            .contains(&add_reaction.emoji.as_data())
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);

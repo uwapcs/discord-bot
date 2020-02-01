@@ -38,7 +38,7 @@ impl EventHandler for Handler {
     // Event handlers are dispatched through a threadpool, and so multiple
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
-        if !(msg.content.starts_with(CONFIG.command_prefix)) {
+        if !(msg.content.starts_with(&CONFIG.command_prefix)) {
             return;
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
