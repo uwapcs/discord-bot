@@ -4,7 +4,7 @@ use std::fs;
 use serde_yaml;
 
 lazy_static! {
-    static ref CONFIG_FILE: String = fs::read_to_string("config.yaml").unwrap();
+    static ref CONFIG_FILE: String = fs::read_to_string("config.yml").unwrap();
     pub static ref CONFIG: UccbotConfig = serde_yaml::from_str(&CONFIG_FILE).unwrap();
 }
 
