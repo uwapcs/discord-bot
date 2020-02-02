@@ -18,9 +18,11 @@ mod config;
 mod user_management;
 mod voting;
 mod util;
+mod reaction_roles;
 
 use config::CONFIG;
 use util::get_string_from_react;
+use reaction_roles::{add_role_by_reaction, remove_role_by_reaction};
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -102,10 +104,15 @@ impl EventHandler for Handler {
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
+                let message_type = get_message_type(&message);
+                if message_type == MessageType::RoleReactMessage {
+                    add_role_by_reaction(ctx, message, add_reaction);
+                    return;
+                }
                 if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id {
                     return;
                 }
-                match get_message_type(&message) {
+                match message_type {
                     MessageType::Motion => {
                         voting::reaction_add(ctx, add_reaction);
                     }
@@ -146,11 +153,16 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
+                let message_type = get_message_type(&message);
+                if message_type == MessageType::RoleReactMessage {
+                    remove_role_by_reaction(ctx, message, removed_reaction);
+                    return;
+                }
                 if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id
                 {
                     return;
                 }
-                match get_message_type(&message) {
+                match message_type {
                     MessageType::Motion => {
                         voting::reaction_remove(ctx, removed_reaction);
                     }
@@ -213,12 +225,16 @@ fn main() {
 enum MessageType {
     Motion,
     Role,
+    RoleReactMessage,
     LogReact,
     Poll,
     Misc
 }
 
 fn get_message_type(message: &Message) -> MessageType {
+    if CONFIG.react_role_messages.iter().any(|rrm| rrm.message == message.id) {
+        return MessageType::RoleReactMessage;
+    }
     if message.embeds.len() <= 0 {
         // Get first word of message
         return match message.content.splitn(2, ' ').next().unwrap() {

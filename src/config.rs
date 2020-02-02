@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use serde::Deserialize;
 use serenity::model::id;
 use std::fs;
@@ -27,6 +28,7 @@ pub struct UccbotConfig {
     pub approve_react: String,
     pub disapprove_react: String,
     pub unsure_react: String,
+    pub react_role_messages: Vec<ReactionMapping>,
 }
 
 impl UccbotConfig {
@@ -40,4 +42,10 @@ impl UccbotConfig {
             self.unsure_react.to_string(),
         ]
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ReactionMapping {
+    pub message: serenity::model::id::MessageId,
+    pub mapping: HashMap<String, id::RoleId>,
 }
