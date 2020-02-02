@@ -105,11 +105,11 @@ impl EventHandler for Handler {
                 if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id {
                     return;
                 }
-                match message_type(&message) {
-                    "motion" => {
+                match get_message_type(&message) {
+                    MessageType::Motion => {
                         voting::reaction_add(ctx, add_reaction);
                     }
-                    "logreact" => {
+                    MessageType::LogReact => {
                         let react_user = add_reaction.user(&ctx).unwrap();
                         let react_as_string = get_string_from_react(add_reaction.emoji.clone());
                         if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
@@ -150,8 +150,8 @@ impl EventHandler for Handler {
                 {
                     return;
                 }
-                match message_type(&message) {
-                    "motion" => {
+                match get_message_type(&message) {
+                    MessageType::Motion => {
                         voting::reaction_remove(ctx, removed_reaction);
                     }
                     _ => {}
@@ -209,21 +209,30 @@ fn main() {
     }
 }
 
-fn message_type(message: &Message) -> &'static str {
+#[derive(Debug, PartialEq)]
+enum MessageType {
+    Motion,
+    Role,
+    LogReact,
+    Poll,
+    Misc
+}
+
+fn get_message_type(message: &Message) -> MessageType {
     if message.embeds.len() <= 0 {
         // Get first word of message
         return match message.content.splitn(2, ' ').next().unwrap() {
-            "Role" => "role",
-            "React" => "logreact",
-            _ => "misc",
+            "Role" => MessageType::Role,
+            "React" => MessageType::LogReact,
+            _ => MessageType::Misc,
         };
     }
     let title: String = message.embeds[0].title.clone().unwrap();
     let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
     let first_word_of_title = words_of_title[0];
     return match first_word_of_title {
-        "Motion" => "motion",
-        "Poll" => "poll",
-        _ => "misc",
+        "Motion" => MessageType::Motion,
+        "Poll" => MessageType::Poll,
+        _ => MessageType::Misc,
     };
 }
