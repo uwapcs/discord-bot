@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate hex_literal;
 
 #[macro_use]
 extern crate log;
@@ -15,14 +17,15 @@ use serenity::{
 };
 
 mod config;
-mod user_management;
-mod voting;
-mod util;
 mod reaction_roles;
+mod token_management;
+mod user_management;
+mod util;
+mod voting;
 
 use config::CONFIG;
-use util::get_string_from_react;
 use reaction_roles::{add_role_by_reaction, remove_role_by_reaction};
+use util::get_string_from_react;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -129,8 +132,7 @@ impl EventHandler for Handler {
                         }
                         info!(
                             "The react {} just added is {:?}",
-                            react_user.name,
-                            react_as_string
+                            react_user.name, react_as_string
                         );
                         let mut msg = MessageBuilder::new();
                         msg.push_italic(react_user.name);
@@ -234,11 +236,15 @@ enum MessageType {
     RoleReactMessage,
     LogReact,
     Poll,
-    Misc
+    Misc,
 }
 
 fn get_message_type(message: &Message) -> MessageType {
-    if CONFIG.react_role_messages.iter().any(|rrm| rrm.message == message.id) {
+    if CONFIG
+        .react_role_messages
+        .iter()
+        .any(|rrm| rrm.message == message.id)
+    {
         return MessageType::RoleReactMessage;
     }
     if message.embeds.len() <= 0 {
