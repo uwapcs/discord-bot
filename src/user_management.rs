@@ -6,6 +6,7 @@ use serenity::{
 };
 
 use crate::config::CONFIG;
+use crate::token_management::*;
 
 macro_rules! e {
     ($error: literal, $x:expr) => {
@@ -59,48 +60,63 @@ impl Commands {
             );
             return;
         }
-        // token stuff
+        e!(
+            "Error sending message: {:?}",
+            // TODO convert to email
+            msg.channel_id
+                .say(&ctx.http, generate_token(&msg.author, name))
+        );
         e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
     pub fn verify(ctx: Context, msg: Message, content: &str) {
         let token = content;
-        // if token is valid
-        e!(
-            "Unable to get member: {:?}",
-            serenity::model::id::GuildId(CONFIG.server_id)
-                .member(ctx.http.clone(), msg.author.id)
-                .map(|mut member| {
-                    e!(
-                        "Unable to remove role: {:?}",
-                        member.remove_role(&ctx.http, CONFIG.unregistered_member_role)
-                    );
-                    e!(
-                        "Unable to edit nickname: {:?}",
-                        member
-                            .edit(&ctx.http, |m| {
-                                let mut rng = rand::thread_rng();
-                                m.nickname(format!(
-                                    "{}, {}",
-                                    name,
-                                    [
-                                        "The Big Cheese",
-                                        "The One and Only",
-                                        "The Exalted One",
-                                        "not to be trusted",
-                                        "The Scoundrel",
-                                        "A big fish in a small pond",
-                                    ][rng.gen_range(0, 5)]
-                                ));
-                                m
-                            })
-                            .map(|()| {
-                                e!(
-                                    "Unable to add role: {:?}",
-                                    member.add_role(&ctx.http, CONFIG.registered_member_role)
-                                );
-                            })
-                    );
-                })
-        );
+        match parse_token(&msg.author, content) {
+            Ok(name) => {
+                e!(
+                    "Unable to get member: {:?}",
+                    serenity::model::id::GuildId(CONFIG.server_id)
+                        .member(ctx.http.clone(), msg.author.id)
+                        .map(|mut member| {
+                            e!(
+                                "Unable to remove role: {:?}",
+                                member.remove_role(&ctx.http, CONFIG.unregistered_member_role)
+                            );
+                            e!(
+                                "Unable to edit nickname: {:?}",
+                                member.edit(&ctx.http, |m| {
+                                    let mut rng = rand::thread_rng();
+                                    m.nickname(format!(
+                                        "{}, {}",
+                                        name,
+                                        [
+                                            "The Big Cheese",
+                                            "The One and Only",
+                                            "The Exalted One",
+                                            "not to be trusted",
+                                            "The Scoundrel",
+                                            "A big fish in a small pond",
+                                        ][rng.gen_range(0, 5)]
+                                    ));
+                                    m
+                                })
+                            );
+                            let new_msg = msg
+                                .channel_id
+                                .say(&ctx.http, "Verification succesful")
+                                .expect("Error sending message");
+                            e!(
+                                "Error deleting register message: {:?}",
+                                new_msg.delete(&ctx)
+                            );
+                        })
+                );
+            }
+            Err(reason) => e!(
+                "Error sending message: {:?}",
+                msg.channel_id
+                    .say(&ctx.http, format!("Verification error: {:?}", reason))
+            ),
+        }
+        e!("Error deleting register message: {:?}", msg.delete(&ctx));
     }
 }
