@@ -1,4 +1,4 @@
-use serenity::model::channel::ReactionType;
+use serenity::model::{channel::ReactionType, guild::PartialGuild};
 
 pub fn get_string_from_react(react: ReactionType) -> String {
     match react {
@@ -7,4 +7,10 @@ pub fn get_string_from_react(react: ReactionType) -> String {
         ReactionType::Unicode(name) => name,
         _ => format!("Unrecognised reaction type: {:?}", react),
     }
+}
+
+pub fn get_react_from_string(string: String, guild: PartialGuild) -> ReactionType {
+     guild.emojis.values().find(|e| e.name == string).map_or_else(
+         || ReactionType::from(string), // unicode emoji
+         |custom_emoji| ReactionType::from(custom_emoji.id))
 }

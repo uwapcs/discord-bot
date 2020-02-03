@@ -188,8 +188,13 @@ impl EventHandler for Handler {
     // private channels, and more.
     //
     // In this case, just print what the current user's username is.
-    fn ready(&self, _: Context, ready: Ready) {
+    fn ready(&self, ctx: Context, ready: Ready) {
         info!("{} is connected!", ready.user.name);
+        reaction_roles::add_all_role_reactions(ctx);
+    }
+
+    fn resume(&self, ctx: Context, _: serenity::model::event::ResumedEvent) {
+        reaction_roles::add_all_role_reactions(ctx);
     }
 }
 
