@@ -1,13 +1,10 @@
-use chrono::{
-    prelude::{SecondsFormat, Utc},
-    DateTime,
-};
+use chrono::{prelude::Utc, DateTime};
 use rand::Rng;
 use serenity::model::user::User;
 use std::str;
 
 lazy_static! {
-    static ref key: [u8; 32] = rand::thread_rng().gen::<[u8; 32]>();
+    static ref KEY: [u8; 32] = rand::thread_rng().gen::<[u8; 32]>();
 }
 
 fn encrypt(plaintext: &str) -> &str {

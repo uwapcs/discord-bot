@@ -50,9 +50,8 @@ impl Commands {
                 .map(|member| new_member(&ctx, member))
         );
     }
-    pub fn register(ctx: Context, msg: Message, content: &str) {
-        let name = content;
-        if name.len() <= 0 {
+    pub fn register(ctx: Context, msg: Message, account_name: &str) {
+        if account_name.len() <= 0 {
             e!(
                 "Error sending message: {:?}",
                 msg.channel_id
@@ -64,13 +63,12 @@ impl Commands {
             "Error sending message: {:?}",
             // TODO convert to email
             msg.channel_id
-                .say(&ctx.http, generate_token(&msg.author, name))
+                .say(&ctx.http, generate_token(&msg.author, account_name))
         );
         e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
-    pub fn verify(ctx: Context, msg: Message, content: &str) {
-        let token = content;
-        match parse_token(&msg.author, content) {
+    pub fn verify(ctx: Context, msg: Message, token: &str) {
+        match parse_token(&msg.author, token) {
             Ok(name) => {
                 e!(
                     "Unable to get member: {:?}",
