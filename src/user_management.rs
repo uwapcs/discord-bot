@@ -59,6 +59,12 @@ impl Commands {
             );
             return;
         }
+        // token stuff
+        e!("Error deleting register message: {:?}", msg.delete(ctx));
+    }
+    pub fn verify(ctx: Context, msg: Message, content: &str) {
+        let token = content;
+        // if token is valid
         e!(
             "Unable to get member: {:?}",
             serenity::model::id::GuildId(CONFIG.server_id)
@@ -96,6 +102,5 @@ impl Commands {
                     );
                 })
         );
-        e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
 }

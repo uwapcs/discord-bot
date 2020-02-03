@@ -51,6 +51,7 @@ impl EventHandler for Handler {
                 println!("{:#?}", msg.content);
             }
             "register" => user_management::Commands::register(ctx, msg.clone(), message_content[1]),
+            "verify" => user_management::Commands::verify(ctx, msg.clone(), message_content[1]),
             "join" => {
                 user_management::Commands::join(ctx, msg.clone(), message_content[1]);
             }
