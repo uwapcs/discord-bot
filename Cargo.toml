@@ -5,11 +5,13 @@ authors = ["tec <tec@ucc.gu.uwa.edu.au>"]
 edition = "2018"
 
 [dependencies]
-serenity = "0.8.0"
-rand = "^0.7.2"
+chrono = "^0.4.10"
 lazy_static = "^1.4.0"
 log = "^0.4.8"
-simplelog = "^0.7.4"
-serde_yaml = "^0.8"
+rand = "^0.7.2"
 serde = "^1.0.104"
-chrono = "^0.4.10"
+serde_yaml = "^0.8"
+serenity = "0.8.0"
+simplelog = "^0.7.4"
+openssl = "^0.10"
+base64 = "^0.11"

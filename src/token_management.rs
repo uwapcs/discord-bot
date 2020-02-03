@@ -1,17 +1,33 @@
+use base64;
 use chrono::{prelude::Utc, DateTime};
+use openssl::symm::{decrypt, encrypt, Cipher};
 use rand::Rng;
 use serenity::model::user::User;
 use std::str;
 
 lazy_static! {
     static ref KEY: [u8; 32] = rand::thread_rng().gen::<[u8; 32]>();
+    static ref CIPHER: Cipher = Cipher::aes_256_cbc();
 }
 
-fn encrypt(plaintext: &str) -> &str {
-    return plaintext;
+fn text_encrypt(plaintext: &str) -> String {
+    let iv: &[u8; 16] = &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let encrypted_vec =
+        encrypt(*CIPHER, &*KEY, Some(iv), plaintext.as_bytes()).expect("encryption failed");
+    return base64::encode(encrypted_vec.as_slice());
 }
-fn decrypt(ciphertext: &str) -> &str {
-    return ciphertext;
+fn text_decrypt(ciphertext: &str) -> String {
+    let iv: &[u8; 16] = &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let decrypted_vec = decrypt(
+        *CIPHER,
+        &*KEY,
+        Some(iv),
+        &base64::decode(ciphertext).expect("Unable to decode"),
+    )
+    .expect("decryption failed");
+    return str::from_utf8(decrypted_vec.as_slice())
+        .expect("Invalid utf8 sequence")
+        .to_owned();
 }
 
 pub fn generate_token<'a>(discord_user: &User, username: &str) -> String {
@@ -24,7 +40,7 @@ pub fn generate_token<'a>(discord_user: &User, username: &str) -> String {
         username
     );
     info!("Token generated for {}: {}", discord_user.name, &payload);
-    encrypt(&payload).to_string()
+    text_encrypt(&payload).to_string()
 }
 
 #[derive(Debug)]
@@ -38,8 +54,9 @@ impl std::fmt::Display for TokenError {
     }
 }
 
-pub fn parse_token(discord_user: &User, token: &str) -> Result<String, TokenError> {
-    let token_components: Vec<_> = decrypt(token).splitn(3, ',').collect();
+pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String, TokenError> {
+    let token = text_decrypt(encrypted_token);
+    let token_components: Vec<_> = token.splitn(3, ',').collect();
     info!(
         "Verification attempt from '{}'(uid: {}) for account '{}' with token from {}",
         discord_user.name, token_components[1], token_components[2], token_components[0]

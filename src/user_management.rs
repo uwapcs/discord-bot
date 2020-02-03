@@ -63,7 +63,7 @@ impl Commands {
             "Error sending message: {:?}",
             // TODO convert to email
             msg.channel_id
-                .say(&ctx.http, generate_token(&msg.author, account_name))
+               .say(&ctx.http, format!("Hey {} here's that token you ordered: {}\nIf this wasn't you just ignore this.", account_name, generate_token(&msg.author, account_name)))
         );
         e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
