@@ -4,6 +4,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 extern crate simplelog;
+#[macro_use] extern crate guard;
 use simplelog::*;
 use std::fs::{read_to_string, File};
 

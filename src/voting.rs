@@ -349,62 +349,63 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
     let react_as_string = get_string_from_react(&add_reaction.emoji);
     match add_reaction.message(&ctx.http) {
         Ok(mut message) => {
-            if let Ok(user) = add_reaction.user(&ctx) {
-                match user.has_role(&ctx, CONFIG.server_id, CONFIG.vote_role) {
-                    Ok(true) => {
-                        // remove vote if already voted
-                        for react in [
-                            CONFIG.for_vote.to_string(),
-                            CONFIG.against_vote.to_string(),
-                            CONFIG.abstain_vote.to_string(),
-                        ]
-                        .iter()
-                        .filter(|r| r != &&react_as_string)
+            guard!(let Ok(user) = add_reaction.user(&ctx) else {
+                return
+            });
+            match user.has_role(&ctx, CONFIG.server_id, CONFIG.vote_role) {
+                Ok(true) => {
+                    // remove vote if already voted
+                    for react in [
+                        CONFIG.for_vote.to_string(),
+                        CONFIG.against_vote.to_string(),
+                        CONFIG.abstain_vote.to_string(),
+                    ]
+                    .iter()
+                    .filter(|r| r != &&react_as_string)
+                    {
+                        for a_user in message
+                            .reaction_users(&ctx, react.as_str(), None, None)
+                            .unwrap()
                         {
-                            for a_user in message
-                                .reaction_users(&ctx, react.as_str(), None, None)
-                                .unwrap()
-                            {
-                                if a_user.id.0 == user.id.0 {
-                                    if let Err(why) = add_reaction.delete(&ctx) {
-                                        error!("Error deleting react: {:?}", why);
-                                    };
-                                    return;
-                                }
+                            if a_user.id.0 == user.id.0 {
+                                if let Err(why) = add_reaction.delete(&ctx) {
+                                    error!("Error deleting react: {:?}", why);
+                                };
+                                return;
                             }
                         }
-                        // remove 'illegal' reacts
-                        if !CONFIG.allowed_reacts().contains(&react_as_string) {
-                            if let Err(why) = add_reaction.delete(&ctx) {
-                                error!("Error deleting react: {:?}", why);
-                            };
-                            return;
-                        }
-                        // update motion
-                        let mut motion_info = get_cached_motion(&ctx, &message);
-                        if let Some(vote) = motion_info.votes.get_mut(&react_as_string) {
-                            vote.retain(|u| u.id != user.id);
-                            vote.push(user.clone());
-                        }
-                        set_cached_motion(message.id, motion_info);
-                        update_motion(&ctx, &mut message, &user, "add", add_reaction);
                     }
-                    Ok(false) => {
-                        if ![
-                            CONFIG.approve_react.to_string(),
-                            CONFIG.disapprove_react.to_string(),
-                        ]
-                        .contains(&react_as_string)
-                        {
-                            if let Err(why) = add_reaction.delete(&ctx) {
-                                error!("Error deleting react: {:?}", why);
-                            };
-                            return;
-                        }
+                    // remove 'illegal' reacts
+                    if !CONFIG.allowed_reacts().contains(&react_as_string) {
+                        if let Err(why) = add_reaction.delete(&ctx) {
+                            error!("Error deleting react: {:?}", why);
+                        };
+                        return;
                     }
-                    Err(why) => {
-                        error!("Error getting user role: {:?}", why);
+                    // update motion
+                    let mut motion_info = get_cached_motion(&ctx, &message);
+                    if let Some(vote) = motion_info.votes.get_mut(&react_as_string) {
+                        vote.retain(|u| u.id != user.id);
+                        vote.push(user.clone());
                     }
+                    set_cached_motion(message.id, motion_info);
+                    update_motion(&ctx, &mut message, &user, "add", add_reaction);
+                }
+                Ok(false) => {
+                    if ![
+                        CONFIG.approve_react.to_string(),
+                        CONFIG.disapprove_react.to_string(),
+                    ]
+                    .contains(&react_as_string)
+                    {
+                        if let Err(why) = add_reaction.delete(&ctx) {
+                            error!("Error deleting react: {:?}", why);
+                        };
+                        return;
+                    }
+                }
+                Err(why) => {
+                    error!("Error getting user role: {:?}", why);
                 }
             }
         }
