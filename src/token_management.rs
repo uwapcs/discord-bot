@@ -18,20 +18,19 @@ fn text_encrypt(plaintext: &str) -> String {
 }
 fn text_decrypt(ciphertext: &str) -> Option<String> {
     let iv: &[u8; 16] = &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    if let Ok(cipher_vec) = base64::decode(ciphertext) {
-        if let Ok(decrypted_vec) = decrypt(*CIPHER, &*KEY, Some(iv), &cipher_vec) {
-            if let Ok(decrypted_token) = str::from_utf8(decrypted_vec.as_slice()) {
-                return Some(decrypted_token.to_owned());
-            } else {
-                warn!("Invalid utf8 in text");
-            }
-        } else {
-            warn!("Text decryption failed");
-        }
-    } else {
+    guard!(let Ok(cipher_vec) = base64::decode(ciphertext) else {
         warn!("Unable to decode base64 text");
-    }
-    None
+        return None
+    });
+    guard!(let Ok(decrypted_vec) = decrypt(*CIPHER, &*KEY, Some(iv), &cipher_vec) else {
+        warn!("Text decryption failed");
+        return None
+    });
+    guard!(let Ok(decrypted_token) = str::from_utf8(decrypted_vec.as_slice()) else {
+        warn!("Invalid utf8 in text");
+        return None
+    });
+    Some(decrypted_token.to_owned())
 }
 
 pub fn generate_token(discord_user: &User, username: &str) -> String {
@@ -60,34 +59,33 @@ impl std::fmt::Display for TokenError {
 }
 
 pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String, TokenError> {
-    if let Some(token) = text_decrypt(encrypted_token) {
-        let token_components: Vec<_> = token.splitn(3, ',').collect();
-        info!(
-            "Verification attempt from '{}'(uid: {}) for account '{}' with token from {}",
-            discord_user.name, token_components[1], token_components[2], token_components[0]
-        );
-        let token_timestamp =
-            DateTime::parse_from_rfc3339(token_components[0]).expect("Invalid date format");
-        let token_discord_user = token_components[1];
-        let token_username = token_components[2];
-        if token_discord_user != discord_user.id.0.to_string() {
-            warn!("... attempt failed : DiscordID mismatch");
-            return Err(TokenError::DiscordIdMismatch);
-        }
-        let time_delta_seconds = Utc::now().timestamp() - token_timestamp.timestamp();
-        if time_delta_seconds > 5 * 60 {
-            warn!(
-                "... attempt failed : token expired ({} seconds old)",
-                time_delta_seconds
-            );
-            return Err(TokenError::TokenExpired);
-        }
-        info!(
-            "... verification successful (token {} seconds old)",
+    guard!(let Some(token) = text_decrypt(encrypted_token) else {
+        return Err(TokenError::TokenInvalid)
+    });
+    let token_components: Vec<_> = token.splitn(3, ',').collect();
+    info!(
+        "Verification attempt from '{}'(uid: {}) for account '{}' with token from {}",
+        discord_user.name, token_components[1], token_components[2], token_components[0]
+    );
+    let token_timestamp =
+        DateTime::parse_from_rfc3339(token_components[0]).expect("Invalid date format");
+    let token_discord_user = token_components[1];
+    let token_username = token_components[2];
+    if token_discord_user != discord_user.id.0.to_string() {
+        warn!("... attempt failed : DiscordID mismatch");
+        return Err(TokenError::DiscordIdMismatch);
+    }
+    let time_delta_seconds = Utc::now().timestamp() - token_timestamp.timestamp();
+    if time_delta_seconds > 5 * 60 {
+        warn!(
+            "... attempt failed : token expired ({} seconds old)",
             time_delta_seconds
         );
-        Ok(token_username.to_owned())
-    } else {
-        Err(TokenError::TokenInvalid)
+        return Err(TokenError::TokenExpired);
     }
+    info!(
+        "... verification successful (token {} seconds old)",
+        time_delta_seconds
+    );
+    Ok(token_username.to_owned())
 }
