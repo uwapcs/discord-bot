@@ -1,0 +1,25 @@
+image: 'rust:latest'
+
+stages:
+  - test
+  - build
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+
+test:
+  stage: test
+  script:
+    - rustc --version
+    - cargo --version
+    - cargo test --verbose
+
+build:
+  stage: build
+  script:
+    - cargo build --all --verbose
+
+cache:
+  paths:
+    - cargo/
+    - target/
