@@ -2,7 +2,7 @@ use crate::config::CONFIG;
 use crate::util::{get_react_from_string, get_string_from_react};
 use serenity::{
     client::Context,
-    model::{channel::Message, channel::Reaction, id::UserId},
+    model::{channel::Message, channel::Reaction, id::UserId, id::RoleId},
 };
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
@@ -39,7 +39,7 @@ pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Rea
         });
 }
 
-pub fn add_all_role_reactions(ctx: Context) {
+pub fn sync_all_role_reactions(ctx: Context) {
     let messages_with_role_mappings = get_all_role_reaction_message(&ctx);
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     // this method supports paging, but we probably don't need it since the server only has a couple of
@@ -49,6 +49,9 @@ pub fn add_all_role_reactions(ctx: Context) {
         .http
         .get_guild_members(CONFIG.server_id, Some(1000), None)
         .unwrap();
+
+    let mut roles_to_add: HashMap<UserId, Vec<RoleId>> = HashMap::from_iter(all_members.iter().map(|m| (m.user_id(), Vec::new())));
+    let mut roles_to_remove: HashMap<UserId, Vec<RoleId>> = HashMap::from_iter(all_members.iter().map(|m| (m.user_id(), Vec::new())));
 
     for (message, mapping) in messages_with_role_mappings {
         for (react, role) in mapping {
@@ -61,16 +64,29 @@ pub fn add_all_role_reactions(ctx: Context) {
                 .unwrap();
             let reactor_ids: HashSet<UserId> = HashSet::from_iter(reactors.iter().map(|r| r.id));
 
-            // this looks O(n!), but n will probably never be more than three digits, so maybe it's okay?
-            // one solution might be to batch up all the roles to add/remove for each member and do them
-            // all at once with .add_roles()
-            for mut member in all_members.clone() {
-                if reactor_ids.contains(&member.user_id()) {
-                    member.add_role(ctx.http.clone(), role).unwrap();
-                } else {
-                    member.remove_role(ctx.http.clone(), role).unwrap();
+            for member in all_members.clone() {
+                let user_id = &member.user_id();
+                if reactor_ids.contains(&user_id) {
+                    if !member.roles.iter().any(|r| r == role) {
+                        roles_to_add.get_mut(&user_id).unwrap().push(*role);
+                    }
+                } else if member.roles.iter().any(|r| r == role) {
+                        roles_to_remove.get_mut(&user_id).unwrap().push(*role);
                 }
             }
+        }
+    }
+
+    for (user_id, roles) in roles_to_add {
+        if !roles.is_empty() {
+            let mut member = all_members.iter().find(|m| m.user_id() == user_id).unwrap().clone();
+            member.add_roles(ctx.http.clone(), &roles[..]).unwrap();
+        }
+    }
+    for (user_id, roles) in roles_to_remove {
+        if !roles.is_empty() {
+            let mut member = all_members.iter().find(|m| m.user_id() == user_id).unwrap().clone();
+            member.remove_roles(ctx.http.clone(), &roles[..]).unwrap();
         }
     }
 }
