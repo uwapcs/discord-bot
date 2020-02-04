@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use serde::Deserialize;
-use serenity::model::id;
-use std::fs;
 use serde_yaml;
+use serenity::model::id;
+use std::collections::HashMap;
+use std::fs;
 
 lazy_static! {
     static ref CONFIG_FILE: String = fs::read_to_string("config.yml").unwrap();

@@ -163,11 +163,8 @@ impl EventHandler for Handler {
                 {
                     return;
                 }
-                match message_type {
-                    MessageType::Motion => {
-                        voting::reaction_remove(ctx, removed_reaction);
-                    }
-                    _ => {}
+                if message_type == MessageType::Motion {
+                    voting::reaction_remove(ctx, removed_reaction);
                 }
             }
             Err(why) => error!("Failed to get react message {:?}", why),
@@ -245,7 +242,7 @@ fn get_message_type(message: &Message) -> MessageType {
     {
         return MessageType::RoleReactMessage;
     }
-    if message.embeds.len() <= 0 {
+    if message.embeds.is_empty() {
         // Get first word of message
         return match message.content.splitn(2, ' ').next().unwrap() {
             "Role" => MessageType::Role,
@@ -256,9 +253,9 @@ fn get_message_type(message: &Message) -> MessageType {
     let title: String = message.embeds[0].title.clone().unwrap();
     let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
     let first_word_of_title = words_of_title[0];
-    return match first_word_of_title {
+    match first_word_of_title {
         "Motion" => MessageType::Motion,
         "Poll" => MessageType::Poll,
         _ => MessageType::Misc,
-    };
+    }
 }

@@ -14,13 +14,12 @@ pub fn add_role_by_reaction(ctx: Context, msg: Message, added_reaction: Reaction
         .find(|rrm| rrm.message == msg.id)
         .and_then(|reaction_mapping| {
             let react_as_string = get_string_from_react(added_reaction.emoji);
-            return reaction_mapping.mapping.get(&react_as_string);
+            reaction_mapping.mapping.get(&react_as_string)
         })
         .and_then(|role_id| {
-            return ctx
-                .http
+            ctx.http
                 .add_member_role(CONFIG.server_id, *msg.author.id.as_u64(), *role_id.as_u64())
-                .ok();
+                .ok()
         });
 }
 
@@ -31,13 +30,12 @@ pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Rea
         .find(|rrm| rrm.message == msg.id)
         .and_then(|reaction_mapping| {
             let react_as_string = get_string_from_react(removed_reaction.emoji);
-            return reaction_mapping.mapping.get(&react_as_string);
+            reaction_mapping.mapping.get(&react_as_string)
         })
         .and_then(|role_id| {
-            return ctx
-                .http
+            ctx.http
                 .remove_member_role(CONFIG.server_id, *msg.author.id.as_u64(), *role_id.as_u64())
-                .ok();
+                .ok()
         });
 }
 
@@ -85,7 +83,7 @@ fn get_all_role_reaction_message(
 )> {
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     let channels = ctx.http.get_channels(*guild.id.as_u64()).unwrap();
-    return channels
+    channels
         .iter()
         .flat_map(|channel| {
             let ctxx = ctx.clone();
@@ -98,5 +96,5 @@ fn get_all_role_reaction_message(
                     .map(|m| (m, &rrm.mapping))
             })
         })
-        .collect();
+        .collect()
 }

@@ -14,7 +14,7 @@ fn text_encrypt(plaintext: &str) -> String {
     let iv: &[u8; 16] = &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let encrypted_vec =
         encrypt(*CIPHER, &*KEY, Some(iv), plaintext.as_bytes()).expect("encryption failed");
-    return base64::encode(encrypted_vec.as_slice());
+    base64::encode(encrypted_vec.as_slice())
 }
 fn text_decrypt(ciphertext: &str) -> Option<String> {
     let iv: &[u8; 16] = &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -31,10 +31,10 @@ fn text_decrypt(ciphertext: &str) -> Option<String> {
     } else {
         warn!("Unable to decode base64 text");
     }
-    return None;
+    None
 }
 
-pub fn generate_token<'a>(discord_user: &User, username: &str) -> String {
+pub fn generate_token(discord_user: &User, username: &str) -> String {
     // if username doesn't exist : throw error
     let timestamp = Utc::now().to_rfc3339();
     let payload = format!(
@@ -44,7 +44,7 @@ pub fn generate_token<'a>(discord_user: &User, username: &str) -> String {
         username
     );
     info!("Token generated for {}: {}", discord_user.name, &payload);
-    text_encrypt(&payload).to_string()
+    text_encrypt(&payload)
 }
 
 #[derive(Debug)]
@@ -86,8 +86,8 @@ pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String,
             "... verification successful (token {} seconds old)",
             time_delta_seconds
         );
-        return Ok(token_username.to_owned());
+        Ok(token_username.to_owned())
     } else {
-        return Err(TokenError::TokenInvalid);
+        Err(TokenError::TokenInvalid)
     }
 }

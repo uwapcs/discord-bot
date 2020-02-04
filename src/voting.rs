@@ -22,7 +22,7 @@ pub struct Commands;
 impl Commands {
     pub fn move_something(ctx: Context, msg: Message, content: &str) {
         let motion = content;
-        if motion.len() > 0 {
+        if !motion.is_empty() {
             create_motion(&ctx, &msg, motion);
             return;
         }
@@ -43,7 +43,7 @@ impl Commands {
     }
     pub fn poll(ctx: Context, msg: Message, content: &str) {
         let topic = content;
-        if topic.len() > 0 {
+        if !topic.is_empty() {
             create_poll(&ctx, &msg, topic);
             return;
         }
@@ -83,7 +83,7 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
     if let Err(why) = msg.delete(ctx) {
         error!("Error deleting motion prompt: {:?}", why);
     }
-    match msg.channel_id.send_message(&ctx.http, |m| {
+    let result = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|embed| {
             embed.author(|a| {
                 a.name(&msg.author.name);
@@ -114,11 +114,9 @@ fn create_motion(ctx: &Context, msg: &Message, topic: &str) {
             CONFIG.disapprove_react.to_string(),
         ]);
         m
-    }) {
-        Err(why) => {
-            error!("Error creating motion: {:?}", why);
-        }
-        Ok(_) => {}
+    });
+    if let Err(why) = result {
+        error!("Error creating motion: {:?}", why);
     }
 }
 
@@ -199,10 +197,10 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
         };
         cached_motions.insert(msg.id, this_motion);
     }
-    return (*cached_motions.get(&msg.id).unwrap()).clone();
+    (*cached_motions.get(&msg.id).unwrap()).clone()
 }
-fn set_cached_motion(id: &serenity::model::id::MessageId, motion_info: MotionInfo) {
-    if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(id) {
+fn set_cached_motion(id: serenity::model::id::MessageId, motion_info: MotionInfo) {
+    if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(&id) {
         *motion = motion_info;
         return;
     }
@@ -302,8 +300,7 @@ fn update_motion(
             let last_status_full = old_embed
                 .fields
                 .iter()
-                .filter(|f| f.name == "Status")
-                .next()
+                .find(|f| f.name == "Status")
                 .expect("No previous status")
                 .clone()
                 .value;
@@ -349,11 +346,17 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                 match user.has_role(&ctx, CONFIG.server_id, CONFIG.vote_role) {
                     Ok(true) => {
                         // remove vote if already voted
-                        for react in [CONFIG.for_vote.to_string(), CONFIG.against_vote.to_string(), CONFIG.abstain_vote.to_string()]
-                            .iter()
-                            .filter(|r| r != &&react_as_string)
+                        for react in [
+                            CONFIG.for_vote.to_string(),
+                            CONFIG.against_vote.to_string(),
+                            CONFIG.abstain_vote.to_string(),
+                        ]
+                        .iter()
+                        .filter(|r| r != &&react_as_string)
                         {
-                            for a_user in message.reaction_users(&ctx, react.as_str(), None, None).unwrap()
+                            for a_user in message
+                                .reaction_users(&ctx, react.as_str(), None, None)
+                                .unwrap()
                             {
                                 if a_user.id.0 == user.id.0 {
                                     if let Err(why) = add_reaction.delete(&ctx) {
@@ -364,8 +367,7 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                             }
                         }
                         // remove 'illegal' reacts
-                        if !CONFIG.allowed_reacts().contains(&react_as_string)
-                        {
+                        if !CONFIG.allowed_reacts().contains(&react_as_string) {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);
                             };
@@ -373,19 +375,19 @@ pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
                         }
                         // update motion
                         let mut motion_info = get_cached_motion(&ctx, &message);
-                        if let Some(vote) = motion_info
-                            .votes
-                            .get_mut(&react_as_string)
-                        {
+                        if let Some(vote) = motion_info.votes.get_mut(&react_as_string) {
                             vote.retain(|u| u.id != user.id);
                             vote.push(user.clone());
                         }
-                        set_cached_motion(&message.id, motion_info);
+                        set_cached_motion(message.id, motion_info);
                         update_motion(&ctx, &mut message, &user, "add", add_reaction);
                     }
                     Ok(false) => {
-                        if ![CONFIG.approve_react.to_string(), CONFIG.disapprove_react.to_string()]
-                            .contains(&react_as_string)
+                        if ![
+                            CONFIG.approve_react.to_string(),
+                            CONFIG.disapprove_react.to_string(),
+                        ]
+                        .contains(&react_as_string)
                         {
                             if let Err(why) = add_reaction.delete(&ctx) {
                                 error!("Error deleting react: {:?}", why);
@@ -416,7 +418,7 @@ pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
                 {
                     vote.retain(|u| u.id != user.id);
                 }
-                set_cached_motion(&message.id, motion_info);
+                set_cached_motion(message.id, motion_info);
                 update_motion(&ctx, &mut message, &user, "remove", removed_reaction);
             }
         }

@@ -51,7 +51,7 @@ impl Commands {
         );
     }
     pub fn register(ctx: Context, msg: Message, account_name: &str) {
-        if account_name.len() <= 0 {
+        if account_name.is_empty() {
             e!(
                 "Error sending message: {:?}",
                 msg.channel_id
