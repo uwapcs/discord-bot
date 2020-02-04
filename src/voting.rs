@@ -56,25 +56,23 @@ impl Commands {
         );
     }
     pub fn cowsay(ctx: Context, msg: Message, content: &str) {
-        let output;
-        if !content.trim().is_empty() {
+        let output = if !content.trim().is_empty() {
             let mut text = content.to_owned();
             text.escape_default();
             // Guess what buddy! You definitely are passing a string to cowsay
             text.insert(0, '\'');
             text.insert(text.len(), '\'');
-            output = std::process::Command::new("cowsay")
+            std::process::Command::new("cowsay")
                 .arg(text)
                 .output()
-                // btw, if we can't execute cowsay we crash
-                .expect("failed to execute cowsay");
+                .expect("failed to execute cowsay")
         } else {
-            output = std::process::Command::new("sh")
+            std::process::Command::new("sh")
                 .arg("-c")
                 .arg("sh -c fortune | cowsay -f \"/usr/share/cowsay/cows/$(echo 'www\nhellokitty\nbud-frogs\nkoala\nsuse\nthree-eyes\npony-smaller\nsheep\nvader\ncower\nmoofasa\nelephant\nflaming-sheep\nskeleton\nsnowman\ntux\napt\nmoose' | shuf -n 1).cow\"")
                 .output()
-                .expect("failed to execute fortune/cowsay");
-        }
+                .expect("failed to execute fortune/cowsay")
+        };
         let mut message = MessageBuilder::new();
         message.push_codeblock(
             String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
