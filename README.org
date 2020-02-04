@@ -1,0 +1,30 @@
+#+TITLE:   UCC Discord Bot
+
+This is a general-purpose bot build for use on the UCC discord.
+
+* Current features
+- Friendly welcome messages
+- Make polls
+- Pass circular motions
+- Assign roles based on reacts
+- Cowsay/fortune
+* (Hopefully) Upcoming features
+- LDAP/AD integration
+  - Sync roles with user groups
+  - Do stuff for/as users (e.g. dispense)
+
+#+BEGIN_SRC
+ _________________________________
+/ Tonight's the night: Sleep in a \
+\ eucalyptus tree.                /
+ ---------------------------------
+     \
+      \
+        ,__, |    |
+        (oo)\|    |___
+        (__)\|    |   )\_
+             |    |_w |  \
+             |    |  ||   *
+
+             Cower....
+#+END_SRC
