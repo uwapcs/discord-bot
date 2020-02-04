@@ -53,9 +53,6 @@ impl EventHandler for Handler {
             }
             "register" => user_management::Commands::register(ctx, msg.clone(), message_content[1]),
             "verify" => user_management::Commands::verify(ctx, msg.clone(), message_content[1]),
-            "join" => {
-                user_management::Commands::join(ctx, msg.clone(), message_content[1]);
-            }
             "move" => {
                 voting::Commands::move_something(ctx, msg.clone(), message_content[1]);
             }

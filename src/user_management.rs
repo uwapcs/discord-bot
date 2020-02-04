@@ -42,14 +42,6 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
 
 pub struct Commands;
 impl Commands {
-    pub fn join(ctx: Context, msg: Message, _content: &str) {
-        e!(
-            "Unable to get user: {:?}",
-            serenity::model::id::GuildId(CONFIG.server_id)
-                .member(ctx.http.clone(), msg.author.id)
-                .map(|member| new_member(&ctx, member))
-        );
-    }
     pub fn register(ctx: Context, msg: Message, account_name: &str) {
         if account_name.is_empty() {
             e!(
