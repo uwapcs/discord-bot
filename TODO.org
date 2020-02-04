@@ -7,10 +7,10 @@ _Involves: File r/w + parsing, discord reactions_
 So, for reaction roles, afaict this is what needs to be done
 
  - [X]  Migrate config.rs to something like ~config.yml~
- - [-] Complete ~reaction_roles.rs~
+ - [X] Complete ~reaction_roles.rs~
      - [X] Load from config (roles, and the rr msg, if they exist)
      - [X] Monitor reactions, update user roles etc.
-     - [ ]  On updated to ~config.yml~ (and on bot load, now that I think of it) overwrite the rr msg with content based on roles in config
+     - [X] Only allow reacts which correspond to roles
 
 * LDAP Integration
 

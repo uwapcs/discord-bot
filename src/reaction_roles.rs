@@ -7,33 +7,48 @@ use serenity::{
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
+macro_rules! e {
+    ($error: literal, $x:expr) => {
+        match $x {
+            Ok(_) => (),
+            Err(why) => error!($error, why),
+        }
+    };
+}
+
 pub fn add_role_by_reaction(ctx: Context, msg: Message, added_reaction: Reaction) {
-    CONFIG
+    let user = added_reaction
+        .user_id
+        .to_user(&ctx)
+        .expect("Unable to get user");
+    if let Some(role_id) = CONFIG
         .react_role_messages
         .iter()
         .find(|rrm| rrm.message == msg.id)
         .and_then(|reaction_mapping| {
-            let react_as_string = get_string_from_react(added_reaction.clone().emoji);
+            let react_as_string = get_string_from_react(&added_reaction.emoji);
             reaction_mapping.mapping.get(&react_as_string)
         })
-        .and_then(|role_id| {
-            info!(
-                "{} requested role {}",
-                added_reaction
-                    .user_id
-                    .to_user(&ctx)
-                    .expect("Unable to get user")
-                    .name,
-                role_id
-            );
-            ctx.http
-                .add_member_role(
-                    CONFIG.server_id,
-                    added_reaction.user_id.0,
-                    *role_id.as_u64(),
-                )
-                .ok()
-        });
+    {
+        info!(
+            "{} requested role '{}'",
+            user.name,
+            role_id
+                .to_role_cached(&ctx)
+                .expect("Unable to get role")
+                .name
+        );
+        ctx.http
+            .add_member_role(
+                CONFIG.server_id,
+                added_reaction.user_id.0,
+                *role_id.as_u64(),
+            )
+            .ok();
+    } else {
+        warn!("{} provided invalid react for role", user.name);
+        e!("Unable to delete react: {:?}", added_reaction.delete(&ctx));
+    }
 }
 
 pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Reaction) {
@@ -42,11 +57,18 @@ pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Rea
         .iter()
         .find(|rrm| rrm.message == msg.id)
         .and_then(|reaction_mapping| {
-            let react_as_string = get_string_from_react(removed_reaction.clone().emoji);
+            let react_as_string = get_string_from_react(&removed_reaction.emoji);
             reaction_mapping.mapping.get(&react_as_string)
         })
         .and_then(|role_id| {
-            info!("{} requested removal of role {}", msg.author.name, role_id);
+            info!(
+                "{} requested removal of role '{}'",
+                msg.author.name,
+                role_id
+                    .to_role_cached(&ctx)
+                    .expect("Unable to get role")
+                    .name
+            );
             ctx.http
                 .remove_member_role(
                     CONFIG.server_id,
@@ -81,15 +103,37 @@ pub fn sync_all_role_reactions(ctx: Context) {
     for (message, mapping) in messages_with_role_mappings {
         i += 1;
         info!("  Sync: prossessing message #{}", i);
+        for react in &message.reactions {
+            let react_as_string = get_string_from_react(&react.reaction_type);
+            if mapping.contains_key(&react_as_string) {
+                continue;
+            }
+            info!(
+                "    message #{}: Removing non-role react '{}'",
+                i, react_as_string
+            );
+            for _illegal_react in
+                &message.reaction_users(&ctx, react.reaction_type.clone(), Some(100), None)
+            {
+                warn!("    need to implement react removal");
+            }
+        }
         for (react, role) in mapping {
-            // the docs say this method can't retrieve more than 100 user reactions at a time, but it seems
-            // to work fine when set to 255...
+            info!("    message #{}: processing react '{}'", i, react);
             // TODO: proper pagination for the unlikely scenario that there are more than 100 (255?) reactions?
             let reaction_type = get_react_from_string(react.clone(), guild.clone());
             let reactors = message
-                .reaction_users(ctx.http.clone(), reaction_type, Some(255), None)
+                .reaction_users(ctx.http.clone(), reaction_type.clone(), Some(100), None)
                 .unwrap();
             let reactor_ids: HashSet<UserId> = HashSet::from_iter(reactors.iter().map(|r| r.id));
+
+            // ensure bot has reacted
+            if !reactor_ids.contains(&UserId::from(CONFIG.bot_id)) {
+                e!(
+                    "Unable to add reaction, {:?}",
+                    message.react(&ctx, reaction_type)
+                );
+            }
 
             for member in all_members.clone() {
                 let user_id = &member.user_id();

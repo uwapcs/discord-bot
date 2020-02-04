@@ -20,8 +20,10 @@ disapprove_react: "⬇"
 unsure_react: "❔"
 
 react_role_messages:
-  - message: 673400351277187072
+  - message: 674164298632790026
     mapping:
       🐊: 609708723006472198 # Autonomous Alligators
       🐃: 609708839243087892 # Bipedal Bison
       🦆: 609708889763479562 # Omnipresent Ostriches
+      j5: 607478818038480937 # Vote role
+      👻: 634415546804338688 # Background charachter

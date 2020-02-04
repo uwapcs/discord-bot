@@ -179,17 +179,17 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
                 let mut m = HashMap::new();
                 m.insert(
                     CONFIG.for_vote.to_string(),
-                    msg.reaction_users(ctx, CONFIG.for_vote.to_string(), None, None)
+                    msg.reaction_users(ctx, CONFIG.for_vote.to_string(), Some(100), None)
                         .unwrap(),
                 );
                 m.insert(
                     CONFIG.against_vote.to_string(),
-                    msg.reaction_users(ctx, CONFIG.against_vote.to_string(), None, None)
+                    msg.reaction_users(ctx, CONFIG.against_vote.to_string(), Some(100), None)
                         .unwrap(),
                 );
                 m.insert(
                     CONFIG.abstain_vote.to_string(),
-                    msg.reaction_users(ctx, CONFIG.abstain_vote.to_string(), None, None)
+                    msg.reaction_users(ctx, CONFIG.abstain_vote.to_string(), Some(100), None)
                         .unwrap(),
                 );
                 m
@@ -253,7 +253,7 @@ fn update_motion(
         "  {:10} {:6} {} on {}",
         user.name,
         change,
-        get_string_from_react(reaction.emoji),
+        get_string_from_react(&reaction.emoji),
         topic
     );
 
@@ -339,7 +339,7 @@ fn update_motion(
 }
 
 pub fn reaction_add(ctx: Context, add_reaction: channel::Reaction) {
-    let react_as_string = get_string_from_react(add_reaction.emoji.clone());
+    let react_as_string = get_string_from_react(&add_reaction.emoji);
     match add_reaction.message(&ctx.http) {
         Ok(mut message) => {
             if let Ok(user) = add_reaction.user(&ctx) {
@@ -414,7 +414,7 @@ pub fn reaction_remove(ctx: Context, removed_reaction: channel::Reaction) {
                 let mut motion_info = get_cached_motion(&ctx, &message);
                 if let Some(vote) = motion_info
                     .votes
-                    .get_mut(&get_string_from_react(removed_reaction.emoji.clone()))
+                    .get_mut(&get_string_from_react(&removed_reaction.emoji))
                 {
                     vote.retain(|u| u.id != user.id);
                 }

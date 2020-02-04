@@ -107,7 +107,9 @@ impl EventHandler for Handler {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
                 let message_type = get_message_type(&message);
-                if message_type == MessageType::RoleReactMessage {
+                if message_type == MessageType::RoleReactMessage
+                    && add_reaction.user_id.0 != CONFIG.bot_id
+                {
                     add_role_by_reaction(ctx, message, add_reaction);
                     return;
                 }
@@ -120,7 +122,7 @@ impl EventHandler for Handler {
                     }
                     MessageType::LogReact => {
                         let react_user = add_reaction.user(&ctx).unwrap();
-                        let react_as_string = get_string_from_react(add_reaction.emoji.clone());
+                        let react_as_string = get_string_from_react(&add_reaction.emoji);
                         if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
                             warn!(
                                 "The logreact message {} just tried to use is too old",
@@ -129,8 +131,8 @@ impl EventHandler for Handler {
                             return;
                         }
                         info!(
-                            "The react {} just added is {:?}",
-                            react_user.name, react_as_string
+                            "The react {} just added is {:?}. In full: {:?}",
+                            react_user.name, react_as_string, add_reaction.emoji
                         );
                         let mut msg = MessageBuilder::new();
                         msg.push_italic(react_user.name);
@@ -155,7 +157,9 @@ impl EventHandler for Handler {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
                 let message_type = get_message_type(&message);
-                if message_type == MessageType::RoleReactMessage {
+                if message_type == MessageType::RoleReactMessage
+                    && removed_reaction.user_id != CONFIG.bot_id
+                {
                     remove_role_by_reaction(ctx, message, removed_reaction);
                     return;
                 }
