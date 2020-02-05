@@ -5,7 +5,7 @@ announcement_channel: 264411219627212801 # committee
 
 bot_id: 635407267881156618
 
-vote_pool_size: 7 # 4 exec + 3 ocm
+vote_pool_size: 6 # 4 exec + 2 ocm
 vote_role: 269817189966544896 # @committee
 tiebreaker_role: 635370432568098817 # @Presiding Presidenterino
 unregistered_member_role: 674641042464833548 # @unregistered
