@@ -3,9 +3,10 @@ extern crate lazy_static;
 
 #[macro_use]
 extern crate log;
-extern crate simplelog;
 extern crate indexmap;
-#[macro_use] extern crate guard;
+extern crate simplelog;
+#[macro_use]
+extern crate guard;
 use simplelog::*;
 use std::fs::{read_to_string, File};
 
@@ -109,7 +110,7 @@ impl EventHandler for Handler {
                 if message_type == MessageType::RoleReactMessage
                     && add_reaction.user_id.0 != CONFIG.bot_id
                 {
-                    add_role_by_reaction(ctx, message, add_reaction);
+                    add_role_by_reaction(&ctx, message, add_reaction);
                     return;
                 }
                 if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id {
@@ -159,7 +160,7 @@ impl EventHandler for Handler {
                 if message_type == MessageType::RoleReactMessage
                     && removed_reaction.user_id != CONFIG.bot_id
                 {
-                    remove_role_by_reaction(ctx, message, removed_reaction);
+                    remove_role_by_reaction(&ctx, message, removed_reaction);
                     return;
                 }
                 if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id
@@ -191,11 +192,11 @@ impl EventHandler for Handler {
     // In this case, just print what the current user's username is.
     fn ready(&self, ctx: Context, ready: Ready) {
         info!("{} is connected!", ready.user.name);
-        reaction_roles::sync_all_role_reactions(ctx);
+        reaction_roles::sync_all_role_reactions(&ctx);
     }
 
     fn resume(&self, ctx: Context, _: serenity::model::event::ResumedEvent) {
-        reaction_roles::sync_all_role_reactions(ctx);
+        reaction_roles::sync_all_role_reactions(&ctx);
     }
 }
 

@@ -17,10 +17,10 @@ macro_rules! e {
     };
 }
 
-pub fn add_role_by_reaction(ctx: Context, msg: Message, added_reaction: Reaction) {
+pub fn add_role_by_reaction(ctx: &Context, msg: Message, added_reaction: Reaction) {
     let user = added_reaction
         .user_id
-        .to_user(&ctx)
+        .to_user(ctx)
         .expect("Unable to get user");
     if let Some(role_id) = CONFIG
         .react_role_messages
@@ -35,7 +35,7 @@ pub fn add_role_by_reaction(ctx: Context, msg: Message, added_reaction: Reaction
             "{} requested role '{}'",
             user.name,
             role_id
-                .to_role_cached(&ctx)
+                .to_role_cached(ctx)
                 .expect("Unable to get role")
                 .name
         );
@@ -48,11 +48,11 @@ pub fn add_role_by_reaction(ctx: Context, msg: Message, added_reaction: Reaction
             .ok();
     } else {
         warn!("{} provided invalid react for role", user.name);
-        e!("Unable to delete react: {:?}", added_reaction.delete(&ctx));
+        e!("Unable to delete react: {:?}", added_reaction.delete(ctx));
     }
 }
 
-pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Reaction) {
+pub fn remove_role_by_reaction(ctx: &Context, msg: Message, removed_reaction: Reaction) {
     CONFIG
         .react_role_messages
         .iter()
@@ -66,7 +66,7 @@ pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Rea
                 "{} requested removal of role '{}'",
                 msg.author.name,
                 role_id
-                    .to_role_cached(&ctx)
+                    .to_role_cached(ctx)
                     .expect("Unable to get role")
                     .name
             );
@@ -80,9 +80,9 @@ pub fn remove_role_by_reaction(ctx: Context, msg: Message, removed_reaction: Rea
         });
 }
 
-pub fn sync_all_role_reactions(ctx: Context) {
+pub fn sync_all_role_reactions(ctx: &Context) {
     info!("Syncing roles to reactions");
-    let messages_with_role_mappings = get_all_role_reaction_message(&ctx);
+    let messages_with_role_mappings = get_all_role_reaction_message(ctx);
     info!("  Sync: reaction messages fetched");
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     info!("  Sync: guild fetched");
@@ -115,7 +115,7 @@ pub fn sync_all_role_reactions(ctx: Context) {
                 i, react_as_string
             );
             for _illegal_react in
-                &message.reaction_users(&ctx, react.reaction_type.clone(), Some(100), None)
+                &message.reaction_users(ctx, react.reaction_type.clone(), Some(100), None)
             {
                 warn!("    need to implement react removal");
             }
@@ -133,7 +133,7 @@ pub fn sync_all_role_reactions(ctx: Context) {
             if !reactor_ids.contains(&UserId::from(CONFIG.bot_id)) {
                 e!(
                     "Unable to add reaction, {:?}",
-                    message.react(&ctx, reaction_type)
+                    message.react(ctx, reaction_type)
                 );
             }
 
