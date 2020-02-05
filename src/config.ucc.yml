@@ -8,7 +8,7 @@ bot_id: 635407267881156618
 vote_pool_size: 7 # 4 exec + 3 ocm
 vote_role: 269817189966544896 # @committee
 tiebreaker_role: 635370432568098817 # @Presiding Presidenterino
-unregistered_member_role: 0 # does not exist
+unregistered_member_role: 674641042464833548 # @unregistered
 registered_member_role: 0 # does not exist
 
 command_prefix: "!"
@@ -21,12 +21,13 @@ disapprove_react: "⬇"
 unsure_react: "❔"
 
 react_role_messages:
-  - message: 674254534859554837 # Club-related
+  - message: 674627132546351134 # Intro
+  - message: 674627180806012941 # Club-related
     mapping:
       uwa: 674254888221278226
       uccl: 674255044006117386
       cpu: 674255083063738368
-  - message: 674254563083288590 # Operating System
+  - message: 674627220328808448 # Operating System
     mapping:
       win10: 674255085307691039
       capple: 674255209916137492
@@ -35,7 +36,7 @@ react_role_messages:
       fedora: 674260517858181122
       linux: 674255299494019093
       bsd: 674255522433859604
-  - message: 674254593127088148 # Editor
+  - message: 674627265946189854 # Editor
     mapping:
       vim: 674255633356423208
       emacs: 674255739061010443
@@ -44,7 +45,7 @@ react_role_messages:
       atom_: 674255748426891274
       intellij: 674255748959567901
       npp: 674255750297812993
-  - message: 674254633929277440 # Programming
+  - message: 674627321713524736 # Programming (1)
     mapping:
       html: 674255751031685130
       css: 674255751707099136
@@ -56,6 +57,8 @@ react_role_messages:
       julia: 674255755305680901
       matlab: 674255755809128448
       mathematica: 674255756320833536
+  - message: 674627430333546516 # Programming (2)
+    mapping:
       c_: 674256084403224673
       cpp: 674256084826849281
       csharp: 674256086261563442
@@ -65,7 +68,7 @@ react_role_messages:
       haskell: 674256088861769738
       ruby: 674256089742835712
       scala: 674256090321387530
-      go: 674256091441397761
       lua: 674256090795474944
+      go: 674256091441397761
       tex: 674256092187983897
       git: 674256093064593439
