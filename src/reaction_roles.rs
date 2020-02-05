@@ -1,4 +1,4 @@
-use crate::config::{ReactRoleMap, CONFIG};
+use crate::config::{CONFIG, ReactRoleMap};
 use crate::util::{get_react_from_string, get_string_from_react};
 use serenity::{
     client::Context,
@@ -174,28 +174,28 @@ pub fn sync_all_role_reactions(ctx: Context) {
     info!("Role reaction sync complete");
 }
 
-fn get_all_role_reaction_message(ctx: &Context) -> Vec<(Message, &'static ReactRoleMap)> {
+fn get_all_role_reaction_message(
+    ctx: &Context,
+) -> Vec<(
+    Message,
+    &'static ReactRoleMap,
+)> {
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     info!("  Find role-react message: guild determined");
     let channels = ctx.http.get_channels(*guild.id.as_u64()).unwrap();
     info!("  Find role-react message: channels determined");
-
-    let mut channel_search_indices: Vec<_> = (0..channels.len()).collect();
-    let mut results: Vec<(Message, &'static ReactRoleMap)> = Vec::new();
-    for react_role in CONFIG.react_role_messages.iter() {
-        for channel_index in &channel_search_indices {
-            if let Ok(msg) = ctx.http.get_message(
-                *channels[*channel_index].id.as_u64(),
-                *react_role.message.as_u64(),
-            ) {
-                results.push((msg, &react_role.mapping));
-                // move channel with message to front of index vector
-                let channel_index_clone = channel_index.to_owned();
-                channel_search_indices.retain(|&i| i != channel_index_clone);
-                channel_search_indices.insert(0, channel_index_clone);
-                break;
-            }
-        }
-    }
-    results
+    channels
+        .iter()
+        .flat_map(|channel| {
+            let ctxx = ctx.clone();
+            // since we don't know which channels the messages are in, we check every combination of message and
+            // channel and ignore the bad matches using .ok() and .filter_map()
+            CONFIG.react_role_messages.iter().filter_map(move |rrm| {
+                ctxx.http
+                    .get_message(*channel.id.as_u64(), *rrm.message.as_u64())
+                    .ok()
+                    .map(|m| (m, &rrm.mapping))
+            })
+        })
+        .collect()
 }
