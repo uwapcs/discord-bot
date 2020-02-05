@@ -1,5 +1,6 @@
 use crate::config::{CONFIG, ReactRoleMap};
 use crate::util::{get_react_from_string, get_string_from_react};
+use rayon::prelude::*;
 use serenity::{
     client::Context,
     model::{channel::Message, channel::Reaction, id::RoleId, id::UserId},
@@ -174,25 +175,20 @@ pub fn sync_all_role_reactions(ctx: Context) {
     info!("Role reaction sync complete");
 }
 
-fn get_all_role_reaction_message(
-    ctx: &Context,
-) -> Vec<(
-    Message,
-    &'static ReactRoleMap,
-)> {
+fn get_all_role_reaction_message(ctx: &Context) -> Vec<(Message, &'static ReactRoleMap)> {
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     info!("  Find role-react message: guild determined");
     let channels = ctx.http.get_channels(*guild.id.as_u64()).unwrap();
     info!("  Find role-react message: channels determined");
+    let http = ctx.http.clone();
     channels
-        .iter()
+        .par_iter()
         .flat_map(|channel| {
-            let ctxx = ctx.clone();
-            // since we don't know which channels the messages are in, we check every combination of message and
-            // channel and ignore the bad matches using .ok() and .filter_map()
-            CONFIG.react_role_messages.iter().filter_map(move |rrm| {
-                ctxx.http
-                    .get_message(*channel.id.as_u64(), *rrm.message.as_u64())
+            // since we don't know which channels the messages are in, we check every combination
+            // of message and channel and ignore the bad matches using .ok() and .filter_map()
+            let h = http.clone(); // thread-local copy
+            CONFIG.react_role_messages.par_iter().filter_map(move |rrm| {
+                h.get_message(*channel.id.as_u64(), *rrm.message.as_u64())
                     .ok()
                     .map(|m| (m, &rrm.mapping))
             })
