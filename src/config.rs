@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_yaml;
 use serenity::model::id;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::fs;
 
 lazy_static! {
@@ -44,8 +44,10 @@ impl UccbotConfig {
     }
 }
 
+pub type ReactRoleMap = IndexMap<String, id::RoleId>;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct ReactionMapping {
     pub message: serenity::model::id::MessageId,
-    pub mapping: HashMap<String, id::RoleId>,
+    pub mapping: ReactRoleMap,
 }

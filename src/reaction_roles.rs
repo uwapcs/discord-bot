@@ -1,4 +1,4 @@
-use crate::config::CONFIG;
+use crate::config::{CONFIG, ReactRoleMap};
 use crate::util::{get_react_from_string, get_string_from_react};
 use serenity::{
     client::Context,
@@ -178,7 +178,7 @@ fn get_all_role_reaction_message(
     ctx: &Context,
 ) -> Vec<(
     Message,
-    &'static HashMap<String, serenity::model::id::RoleId>,
+    &'static ReactRoleMap,
 )> {
     let guild = ctx.http.get_guild(CONFIG.server_id).unwrap();
     info!("  Find role-react message: guild determined");
