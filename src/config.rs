@@ -1,7 +1,7 @@
+use indexmap::IndexMap;
 use serde::Deserialize;
 use serde_yaml;
 use serenity::model::id;
-use indexmap::IndexMap;
 use std::fs;
 
 lazy_static! {
@@ -49,5 +49,10 @@ pub type ReactRoleMap = IndexMap<String, id::RoleId>;
 #[derive(Debug, Deserialize, Clone)]
 pub struct ReactionMapping {
     pub message: serenity::model::id::MessageId,
+    #[serde(default = "empty_rr_map")]
     pub mapping: ReactRoleMap,
+}
+
+fn empty_rr_map() -> ReactRoleMap {
+    IndexMap::new()
 }
