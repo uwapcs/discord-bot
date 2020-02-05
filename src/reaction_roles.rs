@@ -1,4 +1,4 @@
-use crate::config::{CONFIG, ReactRoleMap};
+use crate::config::{ReactRoleMap, CONFIG};
 use crate::util::{get_react_from_string, get_string_from_react};
 use rayon::prelude::*;
 use serenity::{
@@ -89,10 +89,11 @@ pub fn sync_all_role_reactions(ctx: Context) {
     // this method supports paging, but we probably don't need it since the server only has a couple of
     // hundred members. the Reaction.users() method can apparently only retrieve 100 users at once, but
     // this one seems to work fine when set to 1000 (I tried 10,000 but the api returned a 400)
-    let all_members = ctx
+    let mut all_members = ctx
         .http
         .get_guild_members(CONFIG.server_id, Some(1000), None)
         .unwrap();
+    all_members.retain(|m| m.user_id() != CONFIG.bot_id);
     info!("  Sync: all members fetched");
 
     let mut roles_to_add: HashMap<UserId, Vec<RoleId>> =
@@ -187,11 +188,14 @@ fn get_all_role_reaction_message(ctx: &Context) -> Vec<(Message, &'static ReactR
             // since we don't know which channels the messages are in, we check every combination
             // of message and channel and ignore the bad matches using .ok() and .filter_map()
             let h = http.clone(); // thread-local copy
-            CONFIG.react_role_messages.par_iter().filter_map(move |rrm| {
-                h.get_message(*channel.id.as_u64(), *rrm.message.as_u64())
-                    .ok()
-                    .map(|m| (m, &rrm.mapping))
-            })
+            CONFIG
+                .react_role_messages
+                .par_iter()
+                .filter_map(move |rrm| {
+                    h.get_message(*channel.id.as_u64(), *rrm.message.as_u64())
+                        .ok()
+                        .map(|m| (m, &rrm.mapping))
+                })
         })
         .collect()
 }
