@@ -69,7 +69,7 @@ impl Commands {
         } else {
             std::process::Command::new("sh")
                 .arg("-c")
-                .arg("sh -c fortune | cowsay -f \"/usr/share/cowsay/cows/$(echo 'www\nhellokitty\nbud-frogs\nkoala\nsuse\nthree-eyes\npony-smaller\nsheep\nvader\ncower\nmoofasa\nelephant\nflaming-sheep\nskeleton\nsnowman\ntux\napt\nmoose' | shuf -n 1).cow\"")
+                .arg("fortune | cowsay -f \"/usr/share/cowsay/cows/$(echo 'www\nhellokitty\nbud-frogs\nkoala\nsuse\nthree-eyes\npony-smaller\nsheep\nvader\ncower\nmoofasa\nelephant\nflaming-sheep\nskeleton\nsnowman\ntux\napt\nmoose' | shuf -n 1).cow\"")
                 .output()
                 .expect("failed to execute fortune/cowsay")
         };
