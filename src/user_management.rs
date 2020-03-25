@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::seq::SliceRandom;
 use serenity::{
     model::{channel::Message, guild::Member},
     prelude::*,
@@ -84,7 +84,7 @@ impl Commands {
                                 "Unable to edit nickname: {:?}",
                                 member.edit(&ctx.http, |m| {
                                     m.nickname(format!(
-                                        "{}, {}",
+                                        "{}, {:?}",
                                         name,
                                         RANDOM_NICKNAMES.choose(&mut rand::thread_rng())
                                     ));
