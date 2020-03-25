@@ -21,3 +21,24 @@ pub fn get_react_from_string(string: String, guild: PartialGuild) -> ReactionTyp
             |custom_emoji| ReactionType::from(custom_emoji.clone()),
         )
 }
+
+#[macro_use]
+macro_rules! e {
+    ($error: literal, $x:expr) => {
+        match $x {
+            Ok(_) => (),
+            Err(why) => error!($error, why),
+        }
+    };
+}
+
+#[macro_use]
+macro_rules! send_message {
+    ($chan:expr, $context:expr, $message:expr) => {
+        match $chan
+            .say($context, $message) {
+            Ok(_) => (),
+            Err(why) => error!("Error sending message: {:?}", why),
+        }
+    };
+}

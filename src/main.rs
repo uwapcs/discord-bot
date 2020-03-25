@@ -17,25 +17,17 @@ use serenity::{
     utils::MessageBuilder,
 };
 
+#[macro_use]
+mod util;
 mod config;
 mod reaction_roles;
 mod token_management;
 mod user_management;
-mod util;
 mod voting;
 
 use config::CONFIG;
 use reaction_roles::{add_role_by_reaction, remove_role_by_reaction};
 use util::get_string_from_react;
-
-macro_rules! e {
-    ($error: literal, $x:expr) => {
-        match $x {
-            Ok(_) => (),
-            Err(why) => error!($error, why),
-        }
-    };
-}
 
 struct Handler;
 
@@ -51,30 +43,17 @@ impl EventHandler for Handler {
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
         match message_content[0] {
-            "say" => {
-                println!("{:#?}", msg.content);
-            }
+            "say" => println!("{:#?}", msg.content),
             "register" => user_management::Commands::register(ctx, msg.clone(), message_content[1]),
             "verify" => user_management::Commands::verify(ctx, msg.clone(), message_content[1]),
-            "move" => {
-                voting::Commands::move_something(ctx, msg.clone(), message_content[1]);
-            }
-            "motion" => {
-                voting::Commands::motion(ctx, msg.clone(), message_content[1]);
-            }
-            "poll" => {
-                voting::Commands::poll(ctx, msg.clone(), message_content[1]);
-            }
-            "cowsay" => {
-                voting::Commands::cowsay(ctx, msg.clone(), message_content[1]);
-            }
+            "move" => voting::Commands::move_something(ctx, msg.clone(), message_content[1]),
+            "motion" => voting::Commands::motion(ctx, msg.clone(), message_content[1]),
+            "poll" => voting::Commands::poll(ctx, msg.clone(), message_content[1]),
+            "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), message_content[1]),
             "logreact" => {
                 e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
-                e!(
-                    "Error sending message {:?}",
-                    msg.channel_id
-                        .say(&ctx.http, "React to this to log the ID (for the next 5min)")
-                )
+                send_message!(msg.channel_id, &ctx.http, 
+                    "React to this to log the ID (for the next 5min)");
             }
             "help" => {
                 let mut message = MessageBuilder::new();
@@ -86,40 +65,25 @@ impl EventHandler for Handler {
                     "Use {}poll <proposal> to see what people think about something",
                     &CONFIG.command_prefix
                 ));
-                e!(
-                    "Error sending message: {:?}",
-                    msg.channel_id.say(&ctx.http, message.build())
-                );
-            }
-            _ => {
-                e!(
-                    "Error sending message: {:?}",
-                    msg.channel_id.say(
-                        &ctx.http,
-                        format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)
-                    )
-                );
-            }
+                send_message!(msg.channel_id, &ctx.http, message.build());
+            },
+            _ => send_message!(msg.channel_id, &ctx.http, 
+                    format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)),
         }
     }
 
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => {
-                let message_type = get_message_type(&message);
-                if message_type == MessageType::RoleReactMessage
-                    && add_reaction.user_id.0 != CONFIG.bot_id
-                {
-                    add_role_by_reaction(&ctx, message, add_reaction);
-                    return;
-                }
-                if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id {
-                    return;
-                }
-                match message_type {
-                    MessageType::Motion => {
-                        voting::reaction_add(ctx, add_reaction);
-                    }
+                match get_message_type(&message) {
+                    MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
+                        add_role_by_reaction(&ctx, message, add_reaction);
+                        return
+                    },
+                    _ if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id => {
+                        return;
+                    },
+                    MessageType::Motion => voting::reaction_add(ctx, add_reaction),
                     MessageType::LogReact => {
                         let react_user = add_reaction.user(&ctx).unwrap();
                         let react_as_string = get_string_from_react(&add_reaction.emoji);
@@ -141,14 +105,11 @@ impl EventHandler for Handler {
                             add_reaction.emoji,
                         ));
                         msg.push_mono(react_as_string);
-                        e!(
-                            "Error sending message: {:?}",
-                            message.channel_id.say(&ctx.http, msg.build())
-                        );
-                    }
-                    _ => {}
+                        send_message!(message.channel_id, &ctx.http, msg.build());
+                    },
+                    _ => {},
                 }
-            }
+            },
             Err(why) => error!("Failed to get react message {:?}", why),
         }
     }
@@ -156,21 +117,18 @@ impl EventHandler for Handler {
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
             Ok(message) => {
-                let message_type = get_message_type(&message);
-                if message_type == MessageType::RoleReactMessage
-                    && removed_reaction.user_id != CONFIG.bot_id
-                {
-                    remove_role_by_reaction(&ctx, message, removed_reaction);
-                    return;
+                match get_message_type(&message) {
+                    MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
+                        remove_role_by_reaction(&ctx, message, removed_reaction);
+                        return
+                    },
+                    _ if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id => {
+                        return;
+                    },
+                    MessageType::Motion => voting::reaction_remove(ctx, removed_reaction),
+                    _ => {},
                 }
-                if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id
-                {
-                    return;
-                }
-                if message_type == MessageType::Motion {
-                    voting::reaction_remove(ctx, removed_reaction);
-                }
-            }
+            },
             Err(why) => error!("Failed to get react message {:?}", why),
         }
     }

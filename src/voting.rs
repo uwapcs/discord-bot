@@ -9,15 +9,6 @@ use std::sync::Mutex;
 use crate::config::CONFIG;
 use crate::util::get_string_from_react;
 
-macro_rules! e {
-    ($error: literal, $x:expr) => {
-        match $x {
-            Ok(_) => (),
-            Err(why) => error!($error, why),
-        }
-    };
-}
-
 pub struct Commands;
 impl Commands {
     pub fn move_something(ctx: Context, msg: Message, content: &str) {
@@ -26,20 +17,12 @@ impl Commands {
             create_motion(&ctx, &msg, motion);
             return;
         }
-        e!(
-            "Error sending message: {:?}",
-            msg.channel_id.say(
-                &ctx.http,
-                "If there's something you want to motion, put it after the !move keyword",
-            )
-        );
+        send_message!(msg.channel_id, &ctx.http,
+            "If there's something you want to motion, put it after the !move keyword");
     }
     pub fn motion(ctx: Context, msg: Message, _content: &str) {
-        e!("Error sending message: {:?}",
-                msg.channel_id.say(
-                &ctx.http,
-                "I hope you're not having a motion. You may have wanted to !move something instead."
-            ));
+        send_message!(msg.channel_id, &ctx.http,
+            "I hope you're not having a motion. You may have wanted to !move something instead.");
     }
     pub fn poll(ctx: Context, msg: Message, content: &str) {
         let topic = content;
@@ -47,13 +30,8 @@ impl Commands {
             create_poll(&ctx, &msg, topic);
             return;
         }
-        e!(
-            "Error sending message: {:?}",
-            msg.channel_id.say(
-                &ctx.http,
-                "If there's something you want to motion, put it after the !move keyword",
-            )
-        );
+        send_message!(msg.channel_id, &ctx.http,
+            "If there's something you want to motion, put it after the !move keyword");
     }
     pub fn cowsay(ctx: Context, msg: Message, content: &str) {
         let output = if !content.trim().is_empty() {
@@ -78,10 +56,7 @@ impl Commands {
             String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
             None,
         );
-        e!(
-            "Error sending message: {:?}",
-            msg.channel_id.say(&ctx.http, message.build())
-        );
+        send_message!(msg.channel_id, &ctx.http, message.build());
     }
 }
 
@@ -284,9 +259,7 @@ fn update_motion(
             message.push(" is now ");
             message.push_bold(status);
             message.push_italic(format!(" (was {})", last_status));
-            if let Err(why) = CONFIG.announcement_channel.say(&ctx.http, message.build()) {
-                error!("Error sending message: {:?}", why);
-            };
+            send_message!(CONFIG.announcement_channel, &ctx.http, message.build());
         }
     };
 

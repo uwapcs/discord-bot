@@ -8,15 +8,6 @@ use serenity::{
 use crate::config::CONFIG;
 use crate::token_management::*;
 
-macro_rules! e {
-    ($error: literal, $x:expr) => {
-        match $x {
-            Ok(_) => (),
-            Err(why) => error!($error, why),
-        }
-    };
-}
-
 pub fn new_member(ctx: &Context, mut new_member: Member) {
     let mut message = MessageBuilder::new();
     message.push("Nice to see you here ");
@@ -24,16 +15,12 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("! Would you care to introduce yourself?");
     message.push_line("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content");
-    if let Err(why) = CONFIG.welcome_channel.say(&ctx, message.build()) {
-        error!("Error sending message: {:?}", why);
-    }
+    send_message!(CONFIG.welcome_channel, &ctx, message.build());
 
     let mut message = MessageBuilder::new();
     message.push(format!("Say hi to {} in ", new_member.display_name()));
     message.mention(&CONFIG.welcome_channel);
-    if let Err(why) = CONFIG.main_channel.say(&ctx, message.build()) {
-        error!("Error sending message: {:?}", why);
-    }
+    send_message!(CONFIG.main_channel, &ctx, message.build());
 
     if let Err(why) = new_member.add_role(&ctx.http, CONFIG.unregistered_member_role) {
         error!("Error adding user role: {:?}", why);
@@ -53,19 +40,15 @@ pub struct Commands;
 impl Commands {
     pub fn register(ctx: Context, msg: Message, account_name: &str) {
         if account_name.is_empty() {
-            e!(
-                "Error sending message: {:?}",
-                msg.channel_id
-                    .say(&ctx.http, "Usage: !register <ucc username>")
-            );
+            send_message!(msg.channel_id, &ctx.http, "Usage: !register <ucc username>");
             return;
         }
-        e!(
-            "Error sending message: {:?}",
-            // TODO convert to email
-            msg.channel_id
-                .say(&ctx.http, format!("Hey {} here's that token you ordered: {}\nIf this wasn't you just ignore this.", account_name, generate_token(&msg.author, account_name)))
-        );
+        send_message!(
+            msg.channel_id, 
+            &ctx.http, 
+            format!("Hey {} here's that token you ordered: {}\nIf this wasn't you just ignore this.", 
+                account_name, 
+                generate_token(&msg.author, account_name)));
         e!("Error deleting register message: {:?}", msg.delete(ctx));
     }
     pub fn verify(ctx: Context, msg: Message, token: &str) {
@@ -102,11 +85,7 @@ impl Commands {
                         })
                 );
             }
-            Err(reason) => e!(
-                "Error sending message: {:?}",
-                msg.channel_id
-                    .say(&ctx.http, format!("Verification error: {:?}", reason))
-            ),
+            Err(reason) => send_message!(msg.channel_id, &ctx.http, format!("Verification error: {:?}", reason)),
         }
         e!("Error deleting register message: {:?}", msg.delete(&ctx));
     }
