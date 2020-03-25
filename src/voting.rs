@@ -265,9 +265,9 @@ fn update_motion(
     );
 
     let update_status = |e: &mut serenity::builder::CreateEmbed,
-                         status: &str,
-                         last_status_full: String,
-                         topic: &str| {
+                            status: &str,
+                            last_status_full: String,
+                            topic: &str| {
         let last_status = last_status_full.lines().next().expect("No previous status");
         if last_status == status {
             e.field("Status", last_status_full, true);

@@ -101,9 +101,7 @@ pub fn sync_all_role_reactions(ctx: &Context) {
     let mut roles_to_remove: HashMap<UserId, Vec<RoleId>> =
         HashMap::from_iter(all_members.iter().map(|m| (m.user_id(), Vec::new())));
 
-    let mut i = 0;
-    for (message, mapping) in messages_with_role_mappings {
-        i += 1;
+    for (i, (message, mapping)) in messages_with_role_mappings.iter().enumerate() {
         info!("  Sync: prossessing message #{}", i);
         for react in &message.reactions {
             let react_as_string = get_string_from_react(&react.reaction_type);
@@ -120,7 +118,7 @@ pub fn sync_all_role_reactions(ctx: &Context) {
                 warn!("    need to implement react removal");
             }
         }
-        for (react, role) in mapping {
+        for (react, role) in *mapping {
             info!("    message #{}: processing react '{}'", i, react);
             // TODO: proper pagination for the unlikely scenario that there are more than 100 (255?) reactions?
             let reaction_type = get_react_from_string(react.clone(), guild.clone());
