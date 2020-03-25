@@ -40,6 +40,15 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     };
 }
 
+pub const RANDOM_NICKNAMES: &[&str] = &[
+    "The Big Cheese",
+    "The One and Only",
+    "The Exalted One",
+    "not to be trusted",
+    "The Scoundrel",
+    "A big fish in a small pond",
+];
+
 pub struct Commands;
 impl Commands {
     pub fn register(ctx: Context, msg: Message, account_name: &str) {
@@ -74,18 +83,10 @@ impl Commands {
                             e!(
                                 "Unable to edit nickname: {:?}",
                                 member.edit(&ctx.http, |m| {
-                                    let mut rng = rand::thread_rng();
                                     m.nickname(format!(
                                         "{}, {}",
                                         name,
-                                        [
-                                            "The Big Cheese",
-                                            "The One and Only",
-                                            "The Exalted One",
-                                            "not to be trusted",
-                                            "The Scoundrel",
-                                            "A big fish in a small pond",
-                                        ][rng.gen_range(0, 5)]
+                                        RANDOM_NICKNAMES.choose(&mut rand::thread_rng())
                                     ));
                                     m
                                 })
