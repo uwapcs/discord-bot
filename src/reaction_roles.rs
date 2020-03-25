@@ -8,15 +8,6 @@ use serenity::{
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-macro_rules! e {
-    ($error: literal, $x:expr) => {
-        match $x {
-            Ok(_) => (),
-            Err(why) => error!($error, why),
-        }
-    };
-}
-
 pub fn add_role_by_reaction(ctx: &Context, msg: Message, added_reaction: Reaction) {
     let user = added_reaction
         .user_id
