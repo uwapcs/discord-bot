@@ -184,7 +184,7 @@ impl Commands {
                 if name.len() != 3 {
                     None
                 } else {
-                    match database::get_member_info_from_tla(&name) {
+                    match database::get_member_info_from_tla(&name.to_uppercase()) {
                         Ok(member) => Some(member),
                         Err(_) => None,
                     }
