@@ -257,7 +257,9 @@ impl Commands {
         let info_content: Vec<_> = info.splitn(2, ' ').collect();
         let mut property = String::from(info_content[0]);
         property = property.replace("github", "git");
-        if info_content.len() == 1 || !vec!["bio", "git", "photo"].contains(&property.as_str()) {
+        if info_content.len() == 1
+            || !vec!["bio", "git", "web", "photo"].contains(&property.as_str())
+        {
             send_message!(
                 msg.channel_id,
                 &ctx.http,
