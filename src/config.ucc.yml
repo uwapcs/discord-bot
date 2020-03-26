@@ -10,7 +10,7 @@ vote_pool_size: 8 # 4 exec + Fresher rep + 3 ocm
 vote_role: 269817189966544896 # @committee
 tiebreaker_role: 0 # No tiebreak apparently 635370432568098817 # @Presiding Presidenterino
 unregistered_member_role: 674641042464833548 # @unregistered
-registered_member_role: 0 # does not exist
+registered_member_role: 692754285557055490 # @member
 
 command_prefix: "!"
 
@@ -26,7 +26,6 @@ react_role_messages:
   - message: 674653014119809025 # Club-related
     mapping:
       uwa: 674254888221278226
-      uccl: 674255044006117386
       🥤: 691852097003585577
       cpu: 674255083063738368
       🎮: 691852441091833896

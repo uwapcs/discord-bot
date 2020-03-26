@@ -146,6 +146,10 @@ impl Commands {
                                 member.remove_role(&ctx.http, CONFIG.unregistered_member_role)
                             );
                             e!(
+                                "Unable to add role: {:?}",
+                                member.add_role(&ctx.http, CONFIG.registered_member_role)
+                            );
+                            e!(
                                 "Unable to edit nickname: {:?}",
                                 member.edit(&ctx.http, |m| {
                                     m.nickname(member_nickname(&full_member));
