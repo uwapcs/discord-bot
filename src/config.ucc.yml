@@ -2,6 +2,7 @@ server_id: 264401248676085760 # ucc
 main_channel: 264401248676085760 # ucc
 welcome_channel: 606750983699300372 # welcome
 announcement_channel: 264411219627212801 # committee
+readme_channel: 674252245008908298 # readme
 
 bot_id: 635407267881156618
 

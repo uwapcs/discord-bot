@@ -35,9 +35,21 @@ macro_rules! e {
 #[macro_use]
 macro_rules! send_message {
     ($chan:expr, $context:expr, $message:expr) => {
-        match $chan
-            .say($context, $message) {
+        match $chan.say($context, $message) {
             Ok(_) => (),
+            Err(why) => error!("Error sending message: {:?}", why),
+        }
+    };
+}
+
+#[macro_use]
+macro_rules! send_delete_message {
+    ($chan:expr, $context:expr, $message:expr) => {
+        match $chan.say($context, $message) {
+            Ok(the_new_msg) => e!(
+                "Error deleting register message: {:?}",
+                the_new_msg.delete($context)
+            ),
             Err(why) => error!("Error sending message: {:?}", why),
         }
     };

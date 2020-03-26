@@ -7,6 +7,11 @@ extern crate indexmap;
 extern crate simplelog;
 #[macro_use]
 extern crate guard;
+
+#[macro_use]
+extern crate diesel;
+extern crate ldap3;
+
 use simplelog::*;
 use std::fs::{read_to_string, File};
 
@@ -20,6 +25,8 @@ use serenity::{
 #[macro_use]
 mod util;
 mod config;
+mod database;
+mod ldap;
 mod reaction_roles;
 mod token_management;
 mod user_management;
@@ -42,73 +49,118 @@ impl EventHandler for Handler {
             return;
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
+        let content = if message_content.len() > 1 {
+            message_content[1]
+        } else {
+            ""
+        };
         match message_content[0] {
             "say" => println!("{:#?}", msg.content),
-            "register" => user_management::Commands::register(ctx, msg.clone(), message_content[1]),
-            "verify" => user_management::Commands::verify(ctx, msg.clone(), message_content[1]),
-            "move" => voting::Commands::move_something(ctx, msg.clone(), message_content[1]),
-            "motion" => voting::Commands::motion(ctx, msg.clone(), message_content[1]),
-            "poll" => voting::Commands::poll(ctx, msg.clone(), message_content[1]),
-            "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), message_content[1]),
+            "register" => user_management::Commands::register(ctx, msg.clone(), content),
+            "verify" => user_management::Commands::verify(ctx, msg.clone(), content),
+            "profile" => user_management::Commands::profile(ctx, msg.clone(), content),
+            "set" => user_management::Commands::set_info(ctx, msg.clone(), content),
+            "move" => voting::Commands::move_something(ctx, msg.clone(), content),
+            "motion" => voting::Commands::motion(ctx, msg.clone(), content),
+            "poll" => voting::Commands::poll(ctx, msg.clone(), content),
+            "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), content),
             "logreact" => {
                 e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
-                send_message!(msg.channel_id, &ctx.http, 
-                    "React to this to log the ID (for the next 5min)");
+                send_message!(
+                    msg.channel_id,
+                    &ctx.http,
+                    "React to this to log the ID (for the next 5min)"
+                );
             }
             "help" => {
-                let mut message = MessageBuilder::new();
-                message.push_line(format!(
-                    "Use {}move <action> to make a circular motion",
-                    &CONFIG.command_prefix
-                ));
-                message.push_line(format!(
-                    "Use {}poll <proposal> to see what people think about something",
-                    &CONFIG.command_prefix
-                ));
-                send_message!(msg.channel_id, &ctx.http, message.build());
-            },
-            _ => send_message!(msg.channel_id, &ctx.http, 
-                    format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)),
+                // Plaintext version, keep in case IRC users kick up a fuss
+                // let mut message = MessageBuilder::new();
+                // message.push_line(format!(
+                //     "Use {}move <action> to make a circular motion",
+                //     &CONFIG.command_prefix
+                // ));
+                // message.push_line(format!(
+                //     "Use {}poll <proposal> to see what people think about something",
+                //     &CONFIG.command_prefix
+                // ));
+                // send_message!(msg.channel_id, &ctx.http, message.build());
+
+                let result = msg.channel_id.send_message(&ctx.http, |m| {
+                    m.embed(|embed| {
+                        embed.colour(serenity::utils::Colour::DARK_GREY);
+                        embed.title("Commands for the UCC Bot");
+                        embed.field("About", "This is UCC's own little in-house bot, please treat it nicely :)", false);
+                        embed.field("Commitee", "`!move <text>` to make a circular motion\n\
+                                                 `!poll <text>` to get people's opinions on something", false);
+                        embed.field("Account", "`!register <ucc username>` to link your Discord and UCC account\n\
+                                                `!profile <user>` to get the profile of a user\n\
+                                                `!set <bio|git|web|photo>` to set that property of _your_ profile", false);
+                        embed.field("Fun", "`!cowsay <text>` to have a cow say your words\n\
+                                            with no `<text>` it'll give you a fortune 😉", false);
+                        embed
+                    });
+                    m
+                });
+                if let Err(why) = result {
+                    error!("Error sending help embed: {:?}", why);
+                }
+            }
+            // undocumented (in !help) functins
+            "ldap" => send_message!(
+                msg.channel_id,
+                &ctx.http,
+                format!("{:?}", ldap::ldap_search(message_content[1]))
+            ),
+            "tla" => send_message!(
+                msg.channel_id,
+                &ctx.http,
+                format!("{:?}", ldap::tla_search(message_content[1]))
+            ),
+            _ => send_message!(
+                msg.channel_id,
+                &ctx.http,
+                format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)
+            ),
         }
     }
 
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
-            Ok(message) => {
-                match get_message_type(&message) {
-                    MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
-                        add_role_by_reaction(&ctx, message, add_reaction);
-                        return
-                    },
-                    _ if message.author.id.0 != CONFIG.bot_id || add_reaction.user_id == CONFIG.bot_id => {
-                        return;
-                    },
-                    MessageType::Motion => voting::reaction_add(ctx, add_reaction),
-                    MessageType::LogReact => {
-                        let react_user = add_reaction.user(&ctx).unwrap();
-                        let react_as_string = get_string_from_react(&add_reaction.emoji);
-                        if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
-                            warn!(
-                                "The logreact message {} just tried to use is too old",
-                                react_user.name
-                            );
-                            return;
-                        }
-                        info!(
-                            "The react {} just added is {:?}. In full: {:?}",
-                            react_user.name, react_as_string, add_reaction.emoji
-                        );
-                        let mut msg = MessageBuilder::new();
-                        msg.push_italic(react_user.name);
-                        msg.push(format!(
-                            " wanted to know that {} is represented by ",
-                            add_reaction.emoji,
-                        ));
-                        msg.push_mono(react_as_string);
-                        send_message!(message.channel_id, &ctx.http, msg.build());
-                    },
-                    _ => {},
+            Ok(message) => match get_message_type(&message) {
+                MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
+                    add_role_by_reaction(&ctx, message, add_reaction);
+                    return;
                 }
+                _ if message.author.id.0 != CONFIG.bot_id
+                    || add_reaction.user_id == CONFIG.bot_id =>
+                {
+                    return;
+                }
+                MessageType::Motion => voting::reaction_add(ctx, add_reaction),
+                MessageType::LogReact => {
+                    let react_user = add_reaction.user(&ctx).unwrap();
+                    let react_as_string = get_string_from_react(&add_reaction.emoji);
+                    if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
+                        warn!(
+                            "The logreact message {} just tried to use is too old",
+                            react_user.name
+                        );
+                        return;
+                    }
+                    info!(
+                        "The react {} just added is {:?}. In full: {:?}",
+                        react_user.name, react_as_string, add_reaction.emoji
+                    );
+                    let mut msg = MessageBuilder::new();
+                    msg.push_italic(react_user.name);
+                    msg.push(format!(
+                        " wanted to know that {} is represented by ",
+                        add_reaction.emoji,
+                    ));
+                    msg.push_mono(react_as_string);
+                    send_message!(message.channel_id, &ctx.http, msg.build());
+                }
+                _ => {}
             },
             Err(why) => error!("Failed to get react message {:?}", why),
         }
@@ -116,18 +168,18 @@ impl EventHandler for Handler {
 
     fn reaction_remove(&self, ctx: Context, removed_reaction: channel::Reaction) {
         match removed_reaction.message(&ctx.http) {
-            Ok(message) => {
-                match get_message_type(&message) {
-                    MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
-                        remove_role_by_reaction(&ctx, message, removed_reaction);
-                        return
-                    },
-                    _ if message.author.id.0 != CONFIG.bot_id || removed_reaction.user_id == CONFIG.bot_id => {
-                        return;
-                    },
-                    MessageType::Motion => voting::reaction_remove(ctx, removed_reaction),
-                    _ => {},
+            Ok(message) => match get_message_type(&message) {
+                MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
+                    remove_role_by_reaction(&ctx, message, removed_reaction);
+                    return;
                 }
+                _ if message.author.id.0 != CONFIG.bot_id
+                    || removed_reaction.user_id == CONFIG.bot_id =>
+                {
+                    return;
+                }
+                MessageType::Motion => voting::reaction_remove(ctx, removed_reaction),
+                _ => {}
             },
             Err(why) => error!("Failed to get react message {:?}", why),
         }

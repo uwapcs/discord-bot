@@ -15,6 +15,7 @@ pub struct UccbotConfig {
     pub main_channel: id::ChannelId,
     pub welcome_channel: id::ChannelId,
     pub announcement_channel: id::ChannelId,
+    pub readme_channel: id::ChannelId,
     pub bot_id: u64,
     pub vote_pool_size: i8,
     pub vote_role: u64,
