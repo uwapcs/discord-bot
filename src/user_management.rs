@@ -58,6 +58,17 @@ pub const RANDOM_SASS: &[&str] = &[
     "I never treated you this badly.",
 ];
 
+pub const RESERVED_NAMES: &[&str] = &[
+    "committee",
+    "committee-only",
+    "ucc",
+    "ucc-announce",
+    "tech",
+    "wheel",
+    "door",
+    "coke",
+];
+
 pub struct Commands;
 impl Commands {
     pub fn register(ctx: Context, msg: Message, account_name: &str) {
@@ -69,17 +80,7 @@ impl Commands {
             );
             return;
         }
-        if vec![
-            "committee",
-            "committee-only",
-            "ucc",
-            "ucc-announce",
-            "tech",
-            "wheel",
-            "door",
-            "coke",
-        ]
-        .contains(&account_name)
+        if RESERVED_NAMES.contains(&account_name)
             || database::username_exists(account_name)
         {
             send_message!(
@@ -285,19 +286,13 @@ impl Commands {
         let mut value = info_content[1].to_string();
 
         if vec!["git", "photo", "web"].contains(&property.as_str()) {
-            if match Url::parse(&value) {
-                Err(_) => true,
-                Ok(_) => false,
-            } {
+            if Url::parse(&value).is_err() {
                 let user_regex = Regex::new(r"^\w+$").unwrap();
                 if property == "git" && user_regex.is_match(&value) {
                     value = format!("github.com/{}", value);
                 }
                 value = format!("https://{}", value);
-                if match Url::parse(&value) {
-                    Err(_) => true,
-                    Ok(_) => false,
-                } {
+                if Url::parse(&value).is_err() {
                     send_message!(
                         msg.channel_id,
                         &ctx.http,
@@ -307,50 +302,7 @@ impl Commands {
                 }
             }
         }
-        if let Ok(member) = database::get_member_info(&msg.author.id.0) {
-            let set_property = match property.as_str() {
-                "bio" => database::set_member_bio(&msg.author.id.0, &value),
-                "git" => database::set_member_git(&msg.author.id.0, &value),
-                "photo" => database::set_member_photo(&msg.author.id.0, &value),
-                "web" => database::set_member_website(&msg.author.id.0, &value),
-                _ => Err(diesel::result::Error::NotFound),
-            };
-            match set_property {
-                Ok(_) => {
-                    if property == "git" && member.photo == None {
-                        let git_url = Url::parse(&value).unwrap(); // we parsed this earlier and it was fine
-                        match git_url.host_str() {
-                            Some("github.com") => {
-                                if let Some(mut path_segments) = git_url.path_segments() {
-                                    database::set_member_photo(
-                                        &msg.author.id.0,
-                                        format!(
-                                            "https://github.com/{}.png",
-                                            path_segments.next().expect("URL doesn't have a path")
-                                        )
-                                        .as_str(),
-                                    )
-                                    .expect("Attempt to set member photo failed");
-                                } else {
-                                    info!("Git path added (2), {}", git_url.path());
-                                }
-                            }
-                            _ => info!("Git path added, {}", git_url.path()),
-                        }
-                    }
-                }
-                Err(why) => {
-                    error!(
-                        "Umable to set property {} to {} in DB {:?}",
-                        property, value, why
-                    );
-                    send_message!(msg.channel_id, &ctx.http, "Failed to set property. Ooops.");
-                }
-            }
-            if let Err(why) = msg.delete(&ctx) {
-                error!("Error deleting set profile property: {:?}", why);
-            }
-        } else {
+        guard!(let Ok(member) = database::get_member_info(&msg.author.id.0) else {
             send_message!(
                 msg.channel_id,
                 &ctx.http,
@@ -358,7 +310,48 @@ impl Commands {
                     "You don't seem to have a profile. {}register to get one",
                     CONFIG.command_prefix
                 )
-            )
+            );
+            return
+        });
+        let set_property = match property.as_str() {
+            "bio" => database::set_member_bio(&msg.author.id.0, &value),
+            "git" => database::set_member_git(&msg.author.id.0, &value),
+            "photo" => database::set_member_photo(&msg.author.id.0, &value),
+            "web" => database::set_member_website(&msg.author.id.0, &value),
+            _ => Err(diesel::result::Error::NotFound),
+        };
+        match set_property {
+            Ok(_) => if property == "git" && member.photo == None {
+                let git_url = Url::parse(&value).unwrap(); // we parsed this earlier and it was fine
+                match git_url.host_str() {
+                    Some("github.com") => {
+                        if let Some(mut path_segments) = git_url.path_segments() {
+                            database::set_member_photo(
+                                &msg.author.id.0,
+                                format!(
+                                    "https://github.com/{}.png",
+                                    path_segments.next().expect("URL doesn't have a path")
+                                )
+                                .as_str(),
+                            )
+                            .expect("Attempt to set member photo failed");
+                        } else {
+                            info!("Git path added (2), {}", git_url.path());
+                        }
+                    }
+                    _ => info!("Git path added, {}", git_url.path()),
+                }
+            }
+            Err(why) => {
+                error!(
+                    "Umable to set property {} to {} in DB {:?}",
+                    property, value, why
+                );
+                send_message!(msg.channel_id, &ctx.http, "Failed to set property. Ooops.");
+            }
+        }
+        if let Err(why) = msg.delete(&ctx) {
+            error!("Error deleting set profile property: {:?}", why);
         }
     }
 }

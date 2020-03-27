@@ -30,6 +30,13 @@ pub struct UccbotConfig {
     pub disapprove_react: String,
     pub unsure_react: String,
     pub react_role_messages: Vec<ReactionMapping>,
+    #[serde(default = "ldap_bind_address")]
+    pub bind_address: String,
+    pub ldap_pass: String,
+}
+
+pub fn ldap_bind_address() -> String {
+    "ldaps://samson.ucc.asn.au:636".to_string()
 }
 
 impl UccbotConfig {

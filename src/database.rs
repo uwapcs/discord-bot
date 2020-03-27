@@ -65,6 +65,7 @@ pub fn add_member(discord_id: &u64, username: &str) -> Member {
     new_member
 }
 
+#[allow(dead_code)] // remove this if you start using it
 pub fn update_member(discord_id: &u64, member: Member) -> Result<usize, Error> {
     diesel::update(members::table.find(*discord_id as i64))
         .set(&member)
@@ -72,10 +73,7 @@ pub fn update_member(discord_id: &u64, member: Member) -> Result<usize, Error> {
 }
 
 pub fn username_exists(username: &str) -> bool {
-    match get_member_info_from_username(username) {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    get_member_info_from_username(username).is_ok()
 }
 
 pub fn get_member_info(discord_id: &u64) -> Result<Member, Error> {

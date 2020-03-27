@@ -1,4 +1,5 @@
 use ldap3::{LdapConn, LdapConnSettings, Scope, SearchEntry};
+use crate::config::CONFIG;
 
 #[derive(Debug)]
 pub struct LDAPUser {
@@ -9,11 +10,11 @@ pub struct LDAPUser {
 
 pub fn ldap_search(username: &str) -> Option<LDAPUser> {
     let settings = LdapConnSettings::new().set_no_tls_verify(true);
-    let ldap = LdapConn::with_settings(settings, "ldaps://samson.ucc.asn.au:636")
+    let ldap = LdapConn::with_settings(settings, &CONFIG.bind_address)
         .expect("Unable to connect to LDAP");
     ldap.simple_bind(
         "cn=ucc-discord-bot,cn=Users,dc=ad,dc=ucc,dc=gu,dc=uwa,dc=edu,dc=au",
-        include_str!("../ldap_pass").trim_end(),
+        &CONFIG.ldap_pass,
     )
     .expect("Unable to attempt to bind to LDAP")
     .success()
