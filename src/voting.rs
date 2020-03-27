@@ -17,12 +17,18 @@ impl Commands {
             create_motion(&ctx, &msg, motion);
             return;
         }
-        send_message!(msg.channel_id, &ctx.http,
-            "If there's something you want to motion, put it after the !move keyword");
+        send_message!(
+            msg.channel_id,
+            &ctx.http,
+            "If there's something you want to motion, put it after the !move keyword"
+        );
     }
     pub fn motion(ctx: Context, msg: Message, _content: &str) {
-        send_message!(msg.channel_id, &ctx.http,
-            "I hope you're not having a motion. You may have wanted to !move something instead.");
+        send_message!(
+            msg.channel_id,
+            &ctx.http,
+            "I hope you're not having a motion. You may have wanted to !move something instead."
+        );
     }
     pub fn poll(ctx: Context, msg: Message, content: &str) {
         let topic = content;
@@ -30,8 +36,11 @@ impl Commands {
             create_poll(&ctx, &msg, topic);
             return;
         }
-        send_message!(msg.channel_id, &ctx.http,
-            "If there's something you want to motion, put it after the !move keyword");
+        send_message!(
+            msg.channel_id,
+            &ctx.http,
+            "If there's something you want to motion, put it after the !move keyword"
+        );
     }
     pub fn cowsay(ctx: Context, msg: Message, content: &str) {
         let output = if !content.trim().is_empty() {
@@ -240,9 +249,9 @@ fn update_motion(
     );
 
     let update_status = |e: &mut serenity::builder::CreateEmbed,
-                            status: &str,
-                            last_status_full: String,
-                            topic: &str| {
+                         status: &str,
+                         last_status_full: String,
+                         topic: &str| {
         let last_status = last_status_full.lines().next().expect("No previous status");
         if last_status == status {
             e.field("Status", last_status_full, true);

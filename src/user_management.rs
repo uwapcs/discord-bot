@@ -22,7 +22,9 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content.");
     message.push_line("Make sure to check out ");
     message.mention(&CONFIG.readme_channel);
-    message.push_line(" to get yourself some roles for directed pings 😊");
+    message.push_line(" to get yourself some roles for directed pings 😊, and ");
+    message.push_mono(format!("{}register username", CONFIG.command_prefix));
+    message.push_line(" to link to your UCC account.");
     send_message!(CONFIG.welcome_channel, &ctx, message.build());
 
     let mut message = MessageBuilder::new();
@@ -100,15 +102,14 @@ impl Commands {
             );
             return;
         }
-        match msg.channel_id.say(
+        send_message!(
+            msg.channel_id,
             &ctx.http,
-            format!("Ok {}, I've sent an email to you :)", account_name),
-        ) {
-            Ok(new_msg) => {
-                e!("Failed to delete message: {:?}", new_msg.delete(&ctx));
-            }
-            Err(why) => error!("Error sending message: {:?}", why),
-        }
+            format!(
+                "Ok {}, see the email I've just sent you to complete the link",
+                account_name
+            )
+        );
 
         e!("Error deleting register message: {:?}", msg.delete(ctx));
 
@@ -128,7 +129,7 @@ impl Commands {
             .stdin(message.stdout.unwrap())
             .output()
         {
-            Ok(_) => {}
+            Ok(_) => info!("Email sent to {}", account_name),
             Err(why) => error!("Unable to send message with mutt {:?}", why),
         };
     }
@@ -156,10 +157,13 @@ impl Commands {
                                     m
                                 })
                             );
-                            send_delete_message!(
+                            let mut verification_message = MessageBuilder::new();
+                            verification_message.push(format!("Verification was sucessful {}. To proide a friendly introduction to yourself consider doing ", &full_member.username));
+                            verification_message.push_mono(format!("{}set bio <info>", CONFIG.command_prefix));
+                            send_message!(
                                 msg.channel_id,
                                 ctx.http.clone(),
-                                "Verification sucessful"
+                                verification_message.build()
                             );
                         })
                 );
