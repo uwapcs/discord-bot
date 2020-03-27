@@ -60,6 +60,7 @@ impl EventHandler for Handler {
             "verify" => user_management::Commands::verify(ctx, msg.clone(), content),
             "profile" => user_management::Commands::profile(ctx, msg.clone(), content),
             "set" => user_management::Commands::set_info(ctx, msg.clone(), content),
+            "clear" => user_management::Commands::clear_info(ctx, msg.clone(), content),
             "move" => voting::Commands::move_something(ctx, msg.clone(), content),
             "motion" => voting::Commands::motion(ctx, msg.clone(), content),
             "poll" => voting::Commands::poll(ctx, msg.clone(), content),
