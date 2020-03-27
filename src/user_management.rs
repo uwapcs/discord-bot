@@ -157,7 +157,7 @@ impl Commands {
                                 })
                             );
                             let mut verification_message = MessageBuilder::new();
-                            verification_message.push(format!("Great {}! Verification was sucessful. To proide a friendly introduction to yourself consider doing ", &full_member.username));
+                            verification_message.push(format!("Great, {}! Verification was successful. To proide friendly a introduction to yourself consider doing ", &full_member.username));
                             verification_message.push_mono(format!("{}set bio <info>", CONFIG.command_prefix));
                             send_message!(
                                 msg.channel_id,
