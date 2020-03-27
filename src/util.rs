@@ -42,6 +42,7 @@ macro_rules! send_message {
     };
 }
 
+#[allow(unused_macros)] // remove this if you start using it
 #[macro_use]
 macro_rules! send_delete_message {
     ($chan:expr, $context:expr, $message:expr) => {
