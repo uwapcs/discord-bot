@@ -305,7 +305,7 @@ impl Commands {
                                     "git" => "A url to your git{hub,lab} account",
                                     "photo" => "A url to a profile photo online",
                                     "web" => "A url to your website/webpage",
-                                    "web" => "Your degree title",
+                                    "study" => "Your degree title",
                                     _ => "Whatever you want, because this does absolutely nothing.",
                                 }
                             ),
