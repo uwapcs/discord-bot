@@ -34,7 +34,7 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
 
     if let Err(why) = new_member.add_role(&ctx.http, CONFIG.unregistered_member_role) {
         error!("Error adding user role: {:?}", why);
-    };
+    }
 }
 
 fn member_nickname(member: &database::Member) -> String {
@@ -78,7 +78,7 @@ impl Commands {
                 &ctx.http,
                 format!("Usage: {}register <username>", CONFIG.command_prefix)
             );
-            return;
+            return
         }
         if RESERVED_NAMES.contains(&account_name) || database::username_exists(account_name) {
             send_message!(
@@ -88,7 +88,7 @@ impl Commands {
                     .choose(&mut rand::thread_rng())
                     .expect("We couldn't get any sass")
             );
-            return;
+            return
         }
         if !ldap_exists(account_name) {
             send_message!(
@@ -99,7 +99,7 @@ impl Commands {
                     account_name
                 )
             );
-            return;
+            return
         }
         send_message!(
             msg.channel_id,
@@ -200,7 +200,7 @@ impl Commands {
                 &ctx.http,
                 "Sorry, I couldn't find that profile (you need to !register for a profile)"
             );
-            return;
+            return
         }
         let member = possible_member.unwrap();
         let result = msg.channel_id.send_message(&ctx.http, |m| {
@@ -250,29 +250,15 @@ impl Commands {
     }
     pub fn set_info(ctx: Context, msg: Message, info: &str) {
         if info.trim().is_empty() {
-            msg.channel_id
-                .send_message(&ctx.http, |m| {
-                    m.embed(|embed| {
-                        embed.colour(serenity::utils::Colour::LIGHT_GREY);
-                        embed.title("Usage");
-                        embed.description(
-                            format!(
-                                "`{}set <field> <info>` or `{}clear <field>`",
-                                CONFIG.command_prefix,
-                                CONFIG.command_prefix,
-                            )
-                        );
-                        embed.field("Biography", format!("`{}set bio <info>`\nBe friendly! Provide a little introduction to yourself.", CONFIG.command_prefix), false);
-                        embed.field("Git", format!("`{}set git <url>`\nA link to your git forge profile. Also takes a github username for convinience", CONFIG.command_prefix), false);
-                        embed.field("Photo", format!("`{}set photo <url>`\nPut a face to a name! Provide a profile photo.", CONFIG.command_prefix), false);
-                        embed.field("Website", format!("`{}set web <info>`\nGot a personal website? Share it here :)", CONFIG.command_prefix), false);
-                        embed.field("Studying", format!("`{}set study <info>`\nYou're (probably) a Uni student, what's your major?", CONFIG.command_prefix), false);
-                        embed
-                    });
-                    m
-                })
-                .expect("Failed to send usage help embed");
-            return;
+            send_message!(
+                msg.channel_id,
+                &ctx.http,
+                format!(
+                    "Usage: {}set <bio|git|web|photo> <value>",
+                    CONFIG.command_prefix
+                )
+            );
+            return
         }
         let info_content: Vec<_> = info.splitn(2, ' ').collect();
         let mut property = String::from(info_content[0]);
@@ -280,43 +266,23 @@ impl Commands {
         if info_content.len() == 1
             || !vec!["bio", "git", "web", "photo", "study"].contains(&property.as_str())
         {
-            msg.channel_id
-                .send_message(&ctx.http, |m| {
-                    m.embed(|embed| {
-                        embed.colour(serenity::utils::Colour::LIGHT_GREY);
-                        embed.title("Usage");
-                        embed.field(
-                            match property.as_str() {
-                                "bio" => "Biography",
-                                "git" => "Git Forge Profile",
-                                "photo" => "Profile Photo",
-                                "web" => "Personal Website",
-                                "study" => "Area of study",
-                                _ => "???",
-                            },
-                            format!(
-                                "`{}set {} <info>` or `{}clear {}`\n{}",
-                                CONFIG.command_prefix,
-                                property,
-                                CONFIG.command_prefix,
-                                property,
-                                match property.as_str() {
-                                    "bio" => "Some information about yourself :)",
-                                    "git" => "A url to your git{hub,lab} account",
-                                    "photo" => "A url to a profile photo online",
-                                    "web" => "A url to your website/webpage",
-                                    "study" => "Your degree title",
-                                    _ => "Whatever you want, because this does absolutely nothing.",
-                                }
-                            ),
-                            false,
-                        );
-                        embed
-                    });
-                    m
-                })
-                .expect("Failed to send usage embed");
-            return;
+            send_message!(
+                msg.channel_id,
+                &ctx.http,
+                format!(
+                    "Usage: {}set {} {}",
+                    CONFIG.command_prefix,
+                    property,
+                    match property.as_str() {
+                        "bio" => "some information about yourself :)",
+                        "git" => "a url to your git{hub,lab} account",
+                        "photo" => "a url to a profile photo online",
+                        "web" => "a url to your website/webpage",
+                        _ => "whatever you want, because this does absolutely nothing. Try !set to see what you can do"
+                    }
+                )
+            );
+            return
         }
         let mut value = info_content[1].to_string();
 
@@ -333,7 +299,7 @@ impl Commands {
                         &ctx.http,
                         "That ain't a URL where I come from..."
                     );
-                    return;
+                    return
                 }
             }
         }
@@ -400,7 +366,7 @@ impl Commands {
             Commands::set_info(ctx, msg, "");
             return;
         }
-        let clear_property = match field {
+        match field {
             "bio" => database::set_member_bio(&msg.author.id.0, None),
             "git" => database::set_member_git(&msg.author.id.0, None),
             "photo" => database::set_member_photo(&msg.author.id.0, None),

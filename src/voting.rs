@@ -15,7 +15,7 @@ impl Commands {
         let motion = content;
         if !motion.is_empty() {
             create_motion(&ctx, &msg, motion);
-            return;
+            return
         }
         send_message!(
             msg.channel_id,
@@ -34,7 +34,7 @@ impl Commands {
         let topic = content;
         if !topic.is_empty() {
             create_poll(&ctx, &msg, topic);
-            return;
+            return
         }
         send_message!(
             msg.channel_id,
@@ -193,9 +193,22 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
 fn set_cached_motion(id: serenity::model::id::MessageId, motion_info: MotionInfo) {
     if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(&id) {
         *motion = motion_info;
-        return;
+        return
     }
     warn!("{}", "Couldn't find motion in cache to set");
+}
+
+macro_rules! tiebreaker {
+    ($ctx: expr, $vote: expr, $motion_info: expr) => {
+        if $motion_info.votes.get($vote).unwrap().iter().any(|u| {
+            u.has_role($ctx, CONFIG.server_id, CONFIG.tiebreaker_role)
+                .unwrap()
+        }) {
+            0.25
+        } else {
+            0.0
+        }
+    }
 }
 
 fn update_motion(
@@ -211,31 +224,9 @@ fn update_motion(
     let against_votes = motion_info.votes.get(&CONFIG.against_vote).unwrap().len() as isize - 1;
     let abstain_votes = motion_info.votes.get(&CONFIG.abstain_vote).unwrap().len() as isize - 1;
 
-    let has_tiebreaker = |users: &Vec<serenity::model::user::User>| {
-        users.iter().any(|u| {
-            u.has_role(ctx, CONFIG.server_id, CONFIG.tiebreaker_role)
-                .unwrap()
-        })
-    };
-
-    let for_strength = for_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.for_vote).unwrap()) {
-            0.25
-        } else {
-            0.0
-        });
-    let against_strength = against_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.against_vote).unwrap()) {
-            0.25
-        } else {
-            0.0
-        });
-    let abstain_strength = abstain_votes as f32
-        + (if has_tiebreaker(motion_info.votes.get(&CONFIG.abstain_vote).unwrap()) {
-            0.25
-        } else {
-            0.0
-        });
+    let for_strength = for_votes as f32 + tiebreaker!(ctx, &CONFIG.for_vote, motion_info);
+    let against_strength = against_votes as f32 + tiebreaker!(ctx, &CONFIG.against_vote, motion_info);
+    let abstain_strength = abstain_votes as f32 + tiebreaker!(ctx, &CONFIG.abstain_vote, motion_info);
 
     let old_embed = msg.embeds[0].clone();
     let topic = old_embed.clone().title.unwrap();
