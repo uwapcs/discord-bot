@@ -157,7 +157,7 @@ impl Commands {
                                 })
                             );
                             let mut verification_message = MessageBuilder::new();
-                            verification_message.push(format!("Great, {}! Verification was successful. To proide friendly a introduction to yourself consider doing ", &full_member.username));
+                            verification_message.push(format!("Great, {}! Verification was successful. To provide a friendly introduction to yourself, consider doing ", &full_member.username));
                             verification_message.push_mono(format!("{}set bio <info>", CONFIG.command_prefix));
                             send_message!(
                                 msg.channel_id,
@@ -358,6 +358,13 @@ impl Commands {
         };
         match set_property {
             Ok(_) => {
+                info!(
+                    "Set {}'s {} in profile to {}",
+                    &msg.author_nick(ctx.http.clone())
+                        .unwrap_or(String::from("?")),
+                    property,
+                    value
+                );
                 if property == "git" && member.photo == None {
                     let git_url = Url::parse(&value).unwrap(); // we parsed this earlier and it was fine
                     match git_url.host_str() {
@@ -374,11 +381,10 @@ impl Commands {
                                     ),
                                 )
                                 .expect("Attempt to set member photo failed");
-                            } else {
-                                info!("Git path added (2), {}", git_url.path());
+                                info!(" ... and set profile photo to github photo")
                             }
                         }
-                        _ => info!("Git path added, {}", git_url.path()),
+                        _ => {}
                     }
                 }
             }
@@ -409,5 +415,10 @@ impl Commands {
             _ => Err(diesel::result::Error::NotFound),
         }
         .expect("Unable to clear profile field");
+        info!(
+            "Cleared {}'s {} in profile",
+            &msg.author_nick(ctx.http).unwrap_or(String::from("?")),
+            field,
+        );
     }
 }
