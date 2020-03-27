@@ -52,7 +52,7 @@ impl Commands {
                 .expect("failed to execute fortune/cowsay")
         };
         let mut message = MessageBuilder::new();
-        message.push_codeblock(
+        message.push_codeblock_safe(
             String::from_utf8(output.stdout).expect("unable to parse stdout to String"),
             None,
         );
