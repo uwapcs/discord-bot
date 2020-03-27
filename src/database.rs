@@ -55,6 +55,7 @@ pub fn add_member(discord_id: &u64, username: &str) -> Member {
         github: None,
         photo: None,
         website: None,
+        study: None,
     };
     diesel::insert_into(members::table)
         .values(&new_member)
