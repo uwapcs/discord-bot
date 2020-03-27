@@ -80,9 +80,7 @@ impl Commands {
             );
             return;
         }
-        if RESERVED_NAMES.contains(&account_name)
-            || database::username_exists(account_name)
-        {
+        if RESERVED_NAMES.contains(&account_name) || database::username_exists(account_name) {
             send_message!(
                 msg.channel_id,
                 &ctx.http,
@@ -233,6 +231,9 @@ impl Commands {
                 if let Some(bio) = member.biography.clone() {
                     embed.field("Bio", bio, false);
                 }
+                if let Some(study) = member.study.clone() {
+                    embed.field("Area of study", study, false);
+                }
                 if let Some(git) = member.github.clone() {
                     embed.field("Git", git, false);
                 }
@@ -249,14 +250,28 @@ impl Commands {
     }
     pub fn set_info(ctx: Context, msg: Message, info: &str) {
         if info.trim().is_empty() {
-            send_message!(
-                msg.channel_id,
-                &ctx.http,
-                format!(
-                    "Usage: {}set <bio|git|web|photo> <value>",
-                    CONFIG.command_prefix
-                )
-            );
+            msg.channel_id
+                .send_message(&ctx.http, |m| {
+                    m.embed(|embed| {
+                        embed.colour(serenity::utils::Colour::LIGHT_GREY);
+                        embed.title("Usage");
+                        embed.description(
+                            format!(
+                                "`{}set <field> <info>` or `{}clear <field>`",
+                                CONFIG.command_prefix,
+                                CONFIG.command_prefix,
+                            )
+                        );
+                        embed.field("Biography", format!("`{}set bio <info>`\nBe friendly! Provide a little introduction to yourself.", CONFIG.command_prefix), false);
+                        embed.field("Git", format!("`{}set git <url>`\nA link to your git forge profile. Also takes a github username for convinience", CONFIG.command_prefix), false);
+                        embed.field("Photo", format!("`{}set photo <url>`\nPut a face to a name! Provide a profile photo.", CONFIG.command_prefix), false);
+                        embed.field("Website", format!("`{}set web <info>`\nGot a personal website? Share it here :)", CONFIG.command_prefix), false);
+                        embed.field("Studying", format!("`{}set study <info>`\nYou're (probably) a Uni student, what's your major?", CONFIG.command_prefix), false);
+                        embed
+                    });
+                    m
+                })
+                .expect("Failed to send usage help embed");
             return;
         }
         let info_content: Vec<_> = info.splitn(2, ' ').collect();
@@ -265,22 +280,42 @@ impl Commands {
         if info_content.len() == 1
             || !vec!["bio", "git", "web", "photo"].contains(&property.as_str())
         {
-            send_message!(
-                msg.channel_id,
-                &ctx.http,
-                format!(
-                    "Usage: {}set {} {}",
-                    CONFIG.command_prefix,
-                    property,
-                    match property.as_str() {
-                        "bio" => "some information about yourself :)",
-                        "git" => "a url to your git{hub,lab} account",
-                        "photo" => "a url to a profile photo online",
-                        "web" => "a url to your website/webpage",
-                        _ => "whatever you want, because this does absolutely nothing. Try !set to see what you can do"
-                    }
-                )
-            );
+            msg.channel_id
+                .send_message(&ctx.http, |m| {
+                    m.embed(|embed| {
+                        embed.colour(serenity::utils::Colour::LIGHT_GREY);
+                        embed.title("Usage");
+                        embed.field(
+                            match property.as_str() {
+                                "bio" => "Biography",
+                                "git" => "Git Forge Profile",
+                                "photo" => "Profile Photo",
+                                "web" => "Personal Website",
+                                "study" => "Area of study",
+                                _ => "???",
+                            },
+                            format!(
+                                "`{}set {} <info>` or `{}clear {}`\n{}",
+                                CONFIG.command_prefix,
+                                property,
+                                CONFIG.command_prefix,
+                                property,
+                                match property.as_str() {
+                                    "bio" => "Some information about yourself :)",
+                                    "git" => "A url to your git{hub,lab} account",
+                                    "photo" => "A url to a profile photo online",
+                                    "web" => "A url to your website/webpage",
+                                    "web" => "Your degree title",
+                                    _ => "Whatever you want, because this does absolutely nothing.",
+                                }
+                            ),
+                            false,
+                        );
+                        embed
+                    });
+                    m
+                })
+                .expect("Failed to send usage embed");
             return;
         }
         let mut value = info_content[1].to_string();
@@ -314,32 +349,37 @@ impl Commands {
             return
         });
         let set_property = match property.as_str() {
-            "bio" => database::set_member_bio(&msg.author.id.0, &value),
-            "git" => database::set_member_git(&msg.author.id.0, &value),
-            "photo" => database::set_member_photo(&msg.author.id.0, &value),
-            "web" => database::set_member_website(&msg.author.id.0, &value),
+            "bio" => database::set_member_bio(&msg.author.id.0, Some(&value)),
+            "git" => database::set_member_git(&msg.author.id.0, Some(&value)),
+            "photo" => database::set_member_photo(&msg.author.id.0, Some(&value)),
+            "web" => database::set_member_website(&msg.author.id.0, Some(&value)),
+            "study" => database::set_member_study(&msg.author.id.0, Some(&value)),
             _ => Err(diesel::result::Error::NotFound),
         };
         match set_property {
-            Ok(_) => if property == "git" && member.photo == None {
-                let git_url = Url::parse(&value).unwrap(); // we parsed this earlier and it was fine
-                match git_url.host_str() {
-                    Some("github.com") => {
-                        if let Some(mut path_segments) = git_url.path_segments() {
-                            database::set_member_photo(
-                                &msg.author.id.0,
-                                format!(
-                                    "https://github.com/{}.png",
-                                    path_segments.next().expect("URL doesn't have a path")
+            Ok(_) => {
+                if property == "git" && member.photo == None {
+                    let git_url = Url::parse(&value).unwrap(); // we parsed this earlier and it was fine
+                    match git_url.host_str() {
+                        Some("github.com") => {
+                            if let Some(mut path_segments) = git_url.path_segments() {
+                                database::set_member_photo(
+                                    &msg.author.id.0,
+                                    Some(
+                                        format!(
+                                            "https://github.com/{}.png",
+                                            path_segments.next().expect("URL doesn't have a path")
+                                        )
+                                        .as_str(),
+                                    ),
                                 )
-                                .as_str(),
-                            )
-                            .expect("Attempt to set member photo failed");
-                        } else {
-                            info!("Git path added (2), {}", git_url.path());
+                                .expect("Attempt to set member photo failed");
+                            } else {
+                                info!("Git path added (2), {}", git_url.path());
+                            }
                         }
+                        _ => info!("Git path added, {}", git_url.path()),
                     }
-                    _ => info!("Git path added, {}", git_url.path()),
                 }
             }
             Err(why) => {
@@ -353,5 +393,20 @@ impl Commands {
         if let Err(why) = msg.delete(&ctx) {
             error!("Error deleting set profile property: {:?}", why);
         }
+    }
+    pub fn clear_info(ctx: Context, msg: Message, field: &str) {
+        if field.trim().is_empty() {
+            // just show the help page from set_info
+            Commands::set_info(ctx, msg, "");
+            return;
+        }
+        let clear_property = match field {
+            "bio" => database::set_member_bio(&msg.author.id.0, None),
+            "git" => database::set_member_git(&msg.author.id.0, None),
+            "photo" => database::set_member_photo(&msg.author.id.0, None),
+            "web" => database::set_member_website(&msg.author.id.0, None),
+            "study" => database::set_member_study(&msg.author.id.0, None),
+            _ => Err(diesel::result::Error::NotFound),
+        };
     }
 }

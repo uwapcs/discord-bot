@@ -18,6 +18,7 @@ pub struct Member {
     pub github: Option<String>,
     pub photo: Option<String>,
     pub website: Option<String>,
+    pub study: Option<String>,
 }
 
 table! {
@@ -31,6 +32,7 @@ table! {
         github -> Nullable<Text>,
         photo -> Nullable<Text>,
         website -> Nullable<Text>,
+        study -> Nullable<Text>,
     }
 }
 
@@ -94,26 +96,32 @@ pub fn get_member_info_from_tla(tla: &str) -> Result<Member, Error> {
         .first(&db_connection())
 }
 
-pub fn set_member_bio(discord_id: &u64, bio: &str) -> Result<usize, Error> {
+pub fn set_member_bio(discord_id: &u64, bio: Option<&str>) -> Result<usize, Error> {
     diesel::update(members::table.find(*discord_id as i64))
         .set(members::biography.eq(bio))
         .execute(&db_connection())
 }
 
-pub fn set_member_git(discord_id: &u64, git: &str) -> Result<usize, Error> {
+pub fn set_member_git(discord_id: &u64, git: Option<&str>) -> Result<usize, Error> {
     diesel::update(members::table.find(*discord_id as i64))
         .set(members::github.eq(git))
         .execute(&db_connection())
 }
 
-pub fn set_member_photo(discord_id: &u64, url: &str) -> Result<usize, Error> {
+pub fn set_member_photo(discord_id: &u64, url: Option<&str>) -> Result<usize, Error> {
     diesel::update(members::table.find(*discord_id as i64))
         .set(members::photo.eq(url))
         .execute(&db_connection())
 }
 
-pub fn set_member_website(discord_id: &u64, url: &str) -> Result<usize, Error> {
+pub fn set_member_website(discord_id: &u64, url: Option<&str>) -> Result<usize, Error> {
     diesel::update(members::table.find(*discord_id as i64))
         .set(members::website.eq(url))
+        .execute(&db_connection())
+}
+
+pub fn set_member_study(discord_id: &u64, study: Option<&str>) -> Result<usize, Error> {
+    diesel::update(members::table.find(*discord_id as i64))
+        .set(members::study.eq(study))
         .execute(&db_connection())
 }
