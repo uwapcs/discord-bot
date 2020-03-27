@@ -34,7 +34,7 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
 
     if let Err(why) = new_member.add_role(&ctx.http, CONFIG.unregistered_member_role) {
         error!("Error adding user role: {:?}", why);
-    };
+    }
 }
 
 fn member_nickname(member: &database::Member) -> String {
@@ -400,13 +400,14 @@ impl Commands {
             Commands::set_info(ctx, msg, "");
             return;
         }
-        let clear_property = match field {
+        match field {
             "bio" => database::set_member_bio(&msg.author.id.0, None),
             "git" => database::set_member_git(&msg.author.id.0, None),
             "photo" => database::set_member_photo(&msg.author.id.0, None),
             "web" => database::set_member_website(&msg.author.id.0, None),
             "study" => database::set_member_study(&msg.author.id.0, None),
             _ => Err(diesel::result::Error::NotFound),
-        };
+        }
+        .expect("Unable to clear profile field");
     }
 }

@@ -5,6 +5,8 @@ use rand::Rng;
 use serenity::model::user::User;
 use std::str;
 
+pub static TOKEN_LIFETIME: i64 = 300; // 5 minutes
+
 lazy_static! {
     static ref KEY: [u8; 32] = rand::thread_rng().gen::<[u8; 32]>();
     static ref CIPHER: Cipher = Cipher::aes_256_cbc();
@@ -76,7 +78,7 @@ pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String,
         return Err(TokenError::DiscordIdMismatch);
     }
     let time_delta_seconds = Utc::now().timestamp() - token_timestamp.timestamp();
-    if time_delta_seconds > 5 * 60 {
+    if time_delta_seconds > TOKEN_LIFETIME {
         warn!(
             "... attempt failed : token expired ({} seconds old)",
             time_delta_seconds
