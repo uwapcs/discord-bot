@@ -1,18 +1,12 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
 use serde_yaml;
-use toml;
 use serenity::model::id;
 use std::fs;
 
 lazy_static! {
     static ref CONFIG_FILE: String = fs::read_to_string("config.yml").unwrap();
     pub static ref CONFIG: UccbotConfig = serde_yaml::from_str(&CONFIG_FILE).unwrap();
-}
-
-lazy_static! {
-    static ref SECRETS_FILE: String = fs::read_to_string("secrets.toml").unwrap();
-    pub static ref SECRETS: UccbotSecrets = toml::from_str(&SECRETS_FILE).unwrap();
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,6 +32,7 @@ pub struct UccbotConfig {
     pub react_role_messages: Vec<ReactionMapping>,
     #[serde(default = "ldap_bind_address")]
     pub bind_address: String,
+    pub ldap_pass: String,
 }
 
 pub fn ldap_bind_address() -> String {
@@ -55,12 +50,6 @@ impl UccbotConfig {
             self.unsure_react.to_string(),
         ]
     }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UccbotSecrets {
-    pub ldap_pass: String,
-    pub discord_token: String,
 }
 
 pub type ReactRoleMap = IndexMap<String, id::RoleId>;

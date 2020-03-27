@@ -13,7 +13,7 @@ extern crate diesel;
 extern crate ldap3;
 
 use simplelog::*;
-use std::fs::File;
+use std::fs::{read_to_string, File};
 
 use chrono::prelude::Utc;
 use serenity::{
@@ -32,7 +32,7 @@ mod token_management;
 mod user_management;
 mod voting;
 
-use config::{CONFIG, SECRETS};
+use config::CONFIG;
 use reaction_roles::{add_role_by_reaction, remove_role_by_reaction};
 use util::get_string_from_react;
 
@@ -130,12 +130,12 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
                     add_role_by_reaction(&ctx, message, add_reaction);
-                    return
+                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || add_reaction.user_id == CONFIG.bot_id =>
                 {
-                    return
+                    return;
                 }
                 MessageType::Motion => voting::reaction_add(ctx, add_reaction),
                 MessageType::LogReact => {
@@ -146,7 +146,7 @@ impl EventHandler for Handler {
                             "The logreact message {} just tried to use is too old",
                             react_user.name
                         );
-                        return
+                        return;
                     }
                     info!(
                         "The react {} just added is {:?}. In full: {:?}",
@@ -172,12 +172,12 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
                     remove_role_by_reaction(&ctx, message, removed_reaction);
-                    return
+                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || removed_reaction.user_id == CONFIG.bot_id =>
                 {
-                    return
+                    return;
                 }
                 MessageType::Motion => voting::reaction_remove(ctx, removed_reaction),
                 _ => {}
@@ -222,10 +222,13 @@ fn main() {
     ])
     .unwrap();
 
+    // Configure the client with your Discord bot token in the environment.
+    let token = read_to_string("discord_token").unwrap();
+
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
     // by Discord for bot users.
-    let mut client = Client::new(&SECRETS.discord_token, Handler).expect("Err creating client");
+    let mut client = Client::new(&token, Handler).expect("Err creating client");
 
     // Finally, start a single shard, and start listening to events.
     //

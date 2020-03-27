@@ -58,8 +58,6 @@ impl std::fmt::Display for TokenError {
     }
 }
 
-pub static TOKEN_LIFETIME: i64 = 300; // 5 minutes
-
 pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String, TokenError> {
     guard!(let Some(token) = text_decrypt(encrypted_token) else {
         return Err(TokenError::TokenInvalid)
@@ -75,15 +73,15 @@ pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String,
     let token_username = token_components[2];
     if token_discord_user != discord_user.id.0.to_string() {
         warn!("... attempt failed : DiscordID mismatch");
-        return Err(TokenError::DiscordIdMismatch)
+        return Err(TokenError::DiscordIdMismatch);
     }
     let time_delta_seconds = Utc::now().timestamp() - token_timestamp.timestamp();
-    if time_delta_seconds > TOKEN_LIFETIME {
+    if time_delta_seconds > 5 * 60 {
         warn!(
             "... attempt failed : token expired ({} seconds old)",
             time_delta_seconds
         );
-        return Err(TokenError::TokenExpired)
+        return Err(TokenError::TokenExpired);
     }
     info!(
         "... verification successful (token {} seconds old)",

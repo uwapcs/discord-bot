@@ -1,5 +1,5 @@
 use ldap3::{LdapConn, LdapConnSettings, Scope, SearchEntry};
-use crate::config::{CONFIG, SECRETS};
+use crate::config::CONFIG;
 
 #[derive(Debug)]
 pub struct LDAPUser {
@@ -14,7 +14,7 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
         .expect("Unable to connect to LDAP");
     ldap.simple_bind(
         "cn=ucc-discord-bot,cn=Users,dc=ad,dc=ucc,dc=gu,dc=uwa,dc=edu,dc=au",
-        &SECRETS.ldap_pass,
+        &CONFIG.ldap_pass,
     )
     .expect("Unable to attempt to bind to LDAP")
     .success()
@@ -29,8 +29,8 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
         .expect("LDAP error")
         .success()
         .expect("LDAP search error");
-    if rs.is_empty() {
-        return None
+    if rs.len() != 1 {
+        return None;
     }
     let result = SearchEntry::construct(rs[0].clone()).attrs;
     Some(LDAPUser {
@@ -50,7 +50,10 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
 }
 
 pub fn ldap_exists(username: &str) -> bool {
-    ldap_search(username).is_some()
+    match ldap_search(username) {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 #[derive(Debug)]
