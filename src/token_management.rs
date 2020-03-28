@@ -75,7 +75,7 @@ pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String,
     let token_username = token_components[2];
     if token_discord_user != discord_user.id.0.to_string() {
         warn!("... attempt failed : DiscordID mismatch");
-        return Err(TokenError::DiscordIdMismatch);
+        return Err(TokenError::DiscordIdMismatch)
     }
     let time_delta_seconds = Utc::now().timestamp() - token_timestamp.timestamp();
     if time_delta_seconds > TOKEN_LIFETIME {
@@ -83,7 +83,7 @@ pub fn parse_token(discord_user: &User, encrypted_token: &str) -> Result<String,
             "... attempt failed : token expired ({} seconds old)",
             time_delta_seconds
         );
-        return Err(TokenError::TokenExpired);
+        return Err(TokenError::TokenExpired)
     }
     info!(
         "... verification successful (token {} seconds old)",

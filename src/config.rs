@@ -36,12 +36,6 @@ pub struct UccbotConfig {
     pub bind_address: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UccbotSecrets {
-    pub ldap_pass: String,
-    pub discord_token: String,
-}
-
 pub fn ldap_bind_address() -> String {
     "ldaps://samson.ucc.asn.au:636".to_string()
 }
@@ -57,6 +51,12 @@ impl UccbotConfig {
             self.unsure_react.to_string(),
         ]
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UccbotSecrets {
+    pub ldap_pass: String,
+    pub discord_token: String,
 }
 
 pub type ReactRoleMap = IndexMap<String, id::RoleId>;

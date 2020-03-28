@@ -78,7 +78,7 @@ impl Commands {
                 &ctx.http,
                 format!("Usage: {}register <username>", CONFIG.command_prefix)
             );
-            return;
+            return
         }
         if RESERVED_NAMES.contains(&account_name) || database::username_exists(account_name) {
             send_message!(
@@ -88,7 +88,7 @@ impl Commands {
                     .choose(&mut rand::thread_rng())
                     .expect("We couldn't get any sass")
             );
-            return;
+            return
         }
         if !ldap_exists(account_name) {
             send_message!(
@@ -99,7 +99,7 @@ impl Commands {
                     account_name
                 )
             );
-            return;
+            return
         }
         send_message!(
             msg.channel_id,
@@ -200,7 +200,7 @@ impl Commands {
                 &ctx.http,
                 "Sorry, I couldn't find that profile (you need to !register for a profile)"
             );
-            return;
+            return
         }
         let member = possible_member.unwrap();
         let result = msg.channel_id.send_message(&ctx.http, |m| {
@@ -272,7 +272,7 @@ impl Commands {
                     m
                 })
                 .expect("Failed to send usage help embed");
-            return;
+            return
         }
         let info_content: Vec<_> = info.splitn(2, ' ').collect();
         let mut property = String::from(info_content[0]);
@@ -316,7 +316,7 @@ impl Commands {
                     m
                 })
                 .expect("Failed to send usage embed");
-            return;
+            return
         }
         let mut value = info_content[1].to_string();
 
@@ -333,7 +333,7 @@ impl Commands {
                         &ctx.http,
                         "That ain't a URL where I come from..."
                     );
-                    return;
+                    return
                 }
             }
         }
