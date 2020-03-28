@@ -30,7 +30,7 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
         .success()
         .expect("LDAP search error");
     if rs.is_empty() {
-        return None;
+        return None
     }
     let result = SearchEntry::construct(rs[0].clone()).attrs;
     Some(LDAPUser {

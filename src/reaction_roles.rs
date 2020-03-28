@@ -97,7 +97,7 @@ pub fn sync_all_role_reactions(ctx: &Context) {
         for react in &message.reactions {
             let react_as_string = get_string_from_react(&react.reaction_type);
             if mapping.contains_key(&react_as_string) {
-                continue;
+                continue
             }
             info!(
                 "    message #{}: Removing non-role react '{}'",

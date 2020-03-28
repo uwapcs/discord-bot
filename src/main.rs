@@ -130,7 +130,7 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
                     add_role_by_reaction(&ctx, message, add_reaction);
-                    return;
+                    return
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || add_reaction.user_id == CONFIG.bot_id =>
@@ -146,7 +146,7 @@ impl EventHandler for Handler {
                             "The logreact message {} just tried to use is too old",
                             react_user.name
                         );
-                        return;
+                        return
                     }
                     info!(
                         "The react {} just added is {:?}. In full: {:?}",
@@ -172,7 +172,7 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
                     remove_role_by_reaction(&ctx, message, removed_reaction);
-                    return;
+                    return
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || removed_reaction.user_id == CONFIG.bot_id =>
