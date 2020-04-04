@@ -177,8 +177,13 @@ impl Commands {
     }
     pub fn profile(ctx: Context, msg: Message, name: &str) {
         let possible_member: Option<database::Member> = match if name.trim().is_empty() {
+            info!(
+                "{} (discord name) wants to look at their own profile",
+                &msg.author.name
+            );
             database::get_member_info(&msg.author.id.0)
         } else {
+            info!("Searching for a profile for {}", &name);
             database::get_member_info_from_username(&name)
         } {
             Ok(member) => Some(member),
@@ -187,6 +192,10 @@ impl Commands {
                 if name.len() != 3 {
                     None
                 } else {
+                    info!(
+                        "Searching for a profile for the TLA {}",
+                        &name.to_uppercase()
+                    );
                     match database::get_member_info_from_tla(&name.to_uppercase()) {
                         Ok(member) => Some(member),
                         Err(_) => None,
@@ -203,6 +212,7 @@ impl Commands {
             return
         }
         let member = possible_member.unwrap();
+        info!("Found matching profile. UCC username: {}", &member.username);
         let result = msg.channel_id.send_message(&ctx.http, |m| {
             m.embed(|embed| {
                 embed.colour(serenity::utils::Colour::LIGHTER_GREY);
