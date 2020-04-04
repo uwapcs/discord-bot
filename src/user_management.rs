@@ -78,7 +78,7 @@ impl Commands {
                 &ctx.http,
                 format!("Usage: {}register <username>", CONFIG.command_prefix)
             );
-            return
+            return;
         }
         if RESERVED_NAMES.contains(&account_name) || database::username_exists(account_name) {
             send_message!(
@@ -88,7 +88,7 @@ impl Commands {
                     .choose(&mut rand::thread_rng())
                     .expect("We couldn't get any sass")
             );
-            return
+            return;
         }
         if !ldap_exists(account_name) {
             send_message!(
@@ -99,7 +99,7 @@ impl Commands {
                     account_name
                 )
             );
-            return
+            return;
         }
         send_message!(
             msg.channel_id,
@@ -188,12 +188,12 @@ impl Commands {
         } {
             Ok(member) => Some(member),
             Err(why) => {
-                warn!("Could not find member {:?}", why);
+                warn!("Could not find member {}, {:?}", &name, why);
                 if name.len() != 3 {
                     None
                 } else {
                     info!(
-                        "Searching for a profile for the TLA {}",
+                        "Searching for a profile for the TLA '{}'",
                         &name.to_uppercase()
                     );
                     match database::get_member_info_from_tla(&name.to_uppercase()) {
@@ -209,10 +209,10 @@ impl Commands {
                 &ctx.http,
                 "Sorry, I couldn't find that profile (you need to !register for a profile)"
             );
-            return
+            return;
         }
         let member = possible_member.unwrap();
-        info!("Found matching profile. UCC username: {}", &member.username);
+        info!("Found matching profile, UCC username: {}", &member.username);
         let result = msg.channel_id.send_message(&ctx.http, |m| {
             m.embed(|embed| {
                 embed.colour(serenity::utils::Colour::LIGHTER_GREY);
@@ -224,7 +224,7 @@ impl Commands {
                     f.text(&user.name);
                     f.icon_url(
                         user.static_avatar_url()
-                            .expect("Expected user to have avatar"),
+                            .unwrap_or(String::from("https://www.ucc.asn.au/logos/ucc-logo.png")),
                     );
                     f
                 });
@@ -282,7 +282,7 @@ impl Commands {
                     m
                 })
                 .expect("Failed to send usage help embed");
-            return
+            return;
         }
         let info_content: Vec<_> = info.splitn(2, ' ').collect();
         let mut property = String::from(info_content[0]);
@@ -326,7 +326,7 @@ impl Commands {
                     m
                 })
                 .expect("Failed to send usage embed");
-            return
+            return;
         }
         let mut value = info_content[1].to_string();
 
@@ -343,7 +343,7 @@ impl Commands {
                         &ctx.http,
                         "That ain't a URL where I come from..."
                     );
-                    return
+                    return;
                 }
             }
         }
