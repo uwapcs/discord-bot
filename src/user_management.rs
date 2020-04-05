@@ -22,9 +22,9 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content.");
     message.push_line("Make sure to check out ");
     message.mention(&CONFIG.readme_channel);
-    message.push_line(" to get yourself some roles for directed pings 😊, and ");
+    message.push(" to get yourself some roles for directed pings 😊, and ");
     message.push_mono(format!("{}register username", CONFIG.command_prefix));
-    message.push_line(" to link to your UCC account.");
+    message.push(" to link to your UCC account.");
     send_message!(CONFIG.welcome_channel, &ctx, message.build());
 
     let mut message = MessageBuilder::new();
