@@ -97,16 +97,25 @@ pub fn sync_all_role_reactions(ctx: &Context) {
         for react in &message.reactions {
             let react_as_string = get_string_from_react(&react.reaction_type);
             if mapping.contains_key(&react_as_string) {
-                continue
+                continue;
             }
             info!(
                 "    message #{}: Removing non-role react '{}'",
                 i, react_as_string
             );
-            for _illegal_react in
-                &message.reaction_users(ctx, react.reaction_type.clone(), Some(100), None)
+            for illegal_react_user in &message
+                .reaction_users(&ctx.http, react.reaction_type.clone(), Some(100), None)
+                .unwrap_or(vec![])
             {
-                warn!("    need to implement react removal");
+                message
+                    .channel_id
+                    .delete_reaction(
+                        &ctx.http,
+                        message.id,
+                        Some(illegal_react_user.id),
+                        react.reaction_type.clone(),
+                    )
+                    .expect("Unable to delete react");
             }
         }
         for (react, role) in *mapping {
