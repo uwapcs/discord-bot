@@ -20,7 +20,7 @@ pub fn new_member(ctx: &Context, mut new_member: Member) {
     message.push_line("! Would you care to introduce yourself?");
     message.push_line("If you're not sure where to start, perhaps you could tell us about your projects, your first computer…");
     message.push_line("You should also know that we follow the Freenode Channel Guidelines: https://freenode.net/changuide, and try to avoid defamatory content.");
-    message.push_line("Make sure to check out ");
+    message.push("Make sure to check out ");
     message.mention(&CONFIG.readme_channel);
     message.push(" to get yourself some roles for directed pings 😊, and ");
     message.push_mono(format!("{}register username", CONFIG.command_prefix));
