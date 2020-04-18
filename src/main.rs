@@ -31,12 +31,26 @@ mod reaction_roles;
 mod token_management;
 mod user_management;
 mod voting;
+use rand::seq::SliceRandom;
 
 use config::{CONFIG, SECRETS};
 use reaction_roles::{add_role_by_reaction, remove_role_by_reaction};
 use util::get_string_from_react;
 
 struct Handler;
+
+pub const MENTION_RESPONSES: &[&str] = &[
+    "Oh hello there",
+    "Stop bothering me. I'm busy.",
+    "You know, I'm trying to keep track of this place. I don't need any more distractions.",
+    "Don't you have better things to do?",
+    "(sigh) what now?",
+    "Yes, yes, I know I'm brilliant",
+    "What do I need to do to catch a break around here? Eh.",
+    "Mmmmhmmm. I'm still around, don't mind me.",
+    "You know, some people would consider this rude. Luckily I'm not one of those people. In fact, I'm not even a person.",
+    "Perhaps try bothering someone else for a change."
+];
 
 impl EventHandler for Handler {
     // Set a handler for the `message` event - so that whenever a new message
@@ -46,6 +60,15 @@ impl EventHandler for Handler {
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
         if !(msg.content.starts_with(&CONFIG.command_prefix)) {
+            if msg.content.contains(&format!("<@!{}>", CONFIG.bot_id)) {
+                send_message!(
+                    msg.channel_id,
+                    &ctx.http,
+                    MENTION_RESPONSES
+                        .choose(&mut rand::thread_rng())
+                        .expect("We couldn't get any sass")
+                );
+            }
             return;
         }
         let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
@@ -130,7 +153,7 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
                     add_role_by_reaction(&ctx, message, add_reaction);
-                    return
+                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || add_reaction.user_id == CONFIG.bot_id =>
@@ -146,7 +169,7 @@ impl EventHandler for Handler {
                             "The logreact message {} just tried to use is too old",
                             react_user.name
                         );
-                        return
+                        return;
                     }
                     info!(
                         "The react {} just added is {:?}. In full: {:?}",
@@ -172,7 +195,7 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
                     remove_role_by_reaction(&ctx, message, removed_reaction);
-                    return
+                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
                     || removed_reaction.user_id == CONFIG.bot_id =>
