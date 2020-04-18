@@ -88,12 +88,11 @@ impl EventHandler for Handler {
             "motion" => voting::Commands::motion(ctx, msg.clone(), content),
             "poll" => voting::Commands::poll(ctx, msg.clone(), content),
             "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), content),
-            "logreact" => {
-                e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
+            "source" => {
                 send_message!(
                     msg.channel_id,
                     &ctx.http,
-                    "React to this to log the ID (for the next 5min)"
+                    "You want to look at my insides!? Eurgh. \n Just kidding, you can go over every inch of me here: https://gitlab.ucc.asn.au/UCC/discord-bot"
                 );
             }
             "help" => {
@@ -130,6 +129,14 @@ impl EventHandler for Handler {
                 }
             }
             // undocumented (in !help) functins
+            "logreact" => {
+                e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
+                send_message!(
+                    msg.channel_id,
+                    &ctx.http,
+                    "React to this to log the ID (for the next 5min)"
+                );
+            }
             "ldap" => send_message!(
                 msg.channel_id,
                 &ctx.http,
