@@ -60,7 +60,9 @@ impl EventHandler for Handler {
     // events can be dispatched simultaneously.
     fn message(&self, ctx: Context, msg: Message) {
         if !(msg.content.starts_with(&CONFIG.command_prefix)) {
-            if msg.content.contains(&format!("<@!{}>", CONFIG.bot_id)) {
+            if msg.content.contains(&format!("<@!{}>", CONFIG.bot_id)) // desktop mentions
+                || msg.content.contains(&format!("<@{}>", CONFIG.bot_id)) // mobile mentions
+            {
                 send_message!(
                     msg.channel_id,
                     &ctx.http,
