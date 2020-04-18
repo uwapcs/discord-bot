@@ -14,6 +14,7 @@ use crate::ldap::ldap_exists;
 use crate::token_management::*;
 
 pub fn new_member(ctx: &Context, mut new_member: Member) {
+    // TODO see if it's an old (registered) user re-joining, and act accordingly
     let mut message = MessageBuilder::new();
     message.push("Nice to see you here ");
     message.mention(&new_member);
