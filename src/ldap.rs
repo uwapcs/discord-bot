@@ -23,7 +23,7 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
         .search(
             "cn=Users,dc=ad,dc=ucc,dc=gu,dc=uwa,dc=edu,dc=au",
             Scope::Subtree,
-            &format!("(cn={})", username),
+            &format!("(cn={})", ldap3::ldap_escape(username)),
             vec!["when_created", "displayName", "name"],
         )
         .expect("LDAP error")
