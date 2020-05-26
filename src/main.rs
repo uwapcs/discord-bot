@@ -96,8 +96,8 @@ impl EventHandler for Handler {
                 mesg.push(
                     "You want to look at my insides!? Eurgh.\nJust kidding, you can go over ",
                 );
-                mesg.push_italic("every inch ");
-                mesg.push("of me here: https://gitlab.ucc.asn.au/UCC/discord-bot 😉");
+                mesg.push_italic("every inch");
+                mesg.push(" of me here: https://gitlab.ucc.asn.au/UCC/discord-bot 😉");
                 send_message!(msg.channel_id, &ctx.http, mesg.build());
             }
             "help" => {
