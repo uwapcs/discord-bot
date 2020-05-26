@@ -61,7 +61,8 @@ impl EventHandler for Handler {
     fn message(&self, ctx: Context, msg: Message) {
         if !(msg.content.starts_with(&CONFIG.command_prefix)) {
             if msg.content.contains(&format!("<@!{}>", CONFIG.bot_id)) // desktop mentions
-                || msg.content.contains(&format!("<@{}>", CONFIG.bot_id)) // mobile mentions
+                || msg.content.contains(&format!("<@{}>", CONFIG.bot_id))
+            // mobile mentions
             {
                 send_message!(
                     msg.channel_id,
@@ -91,11 +92,13 @@ impl EventHandler for Handler {
             "poll" => voting::Commands::poll(ctx, msg.clone(), content),
             "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), content),
             "source" => {
-                send_message!(
-                    msg.channel_id,
-                    &ctx.http,
-                    "You want to look at my insides!? Eurgh. \n Just kidding, you can go over every inch of me here: https://gitlab.ucc.asn.au/UCC/discord-bot"
+                let mut mesg = MessageBuilder::new();
+                mesg.push(
+                    "You want to look at my insides!? Eurgh.\nJust kidding, you can go over ",
                 );
+                mesg.push_italic("every inch ");
+                mesg.push("of me here: https://gitlab.ucc.asn.au/UCC/discord-bot 😉");
+                send_message!(msg.channel_id, &ctx.http, mesg.build());
             }
             "help" => {
                 // Plaintext version, keep in case IRC users kick up a fuss
