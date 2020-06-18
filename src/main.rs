@@ -122,7 +122,8 @@ impl EventHandler for Handler {
                                                  `!poll <text>` to get people's opinions on something", false);
                         embed.field("Account", "`!register <ucc username>` to link your Discord and UCC account\n\
                                                 `!profile <user>` to get the profile of a user\n\
-                                                `!set <bio|git|web|photo>` to set that property of _your_ profile", false);
+                                                `!set <bio|git|web|photo>` to set that property of _your_ profile\n\
+                                                `!updateroles` to update your registered roles", false);
                         embed.field("Fun", "`!cowsay <text>` to have a cow say your words\n\
                                             with no `<text>` it'll give you a fortune 😉", false);
                         embed
@@ -152,6 +153,7 @@ impl EventHandler for Handler {
                 &ctx.http,
                 format!("{:?}", ldap::tla_search(message_content[1]))
             ),
+            "updateroles" => user_management::Commands::update_registered_role(ctx, msg),
             _ => send_message!(
                 msg.channel_id,
                 &ctx.http,

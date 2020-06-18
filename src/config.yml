@@ -13,6 +13,7 @@ vote_role: 607478818038480937
 tiebreaker_role: 607509283483025409
 unregistered_member_role: 608282247350714408
 registered_member_role: 608282133118582815
+expired_member_role: 0
 command_prefix: "!"
 
 for_vote: "👍"
