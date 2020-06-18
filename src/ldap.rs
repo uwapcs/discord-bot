@@ -6,6 +6,7 @@ pub struct LDAPUser {
     pub username: String,
     pub name: String,
     pub when_created: String,
+    pub login_shell: String,
 }
 
 pub fn ldap_search(username: &str) -> Option<LDAPUser> {
@@ -24,7 +25,7 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
             "cn=Users,dc=ad,dc=ucc,dc=gu,dc=uwa,dc=edu,dc=au",
             Scope::Subtree,
             &format!("(cn={})", ldap3::ldap_escape(username)),
-            vec!["when_created", "displayName", "name"],
+            vec!["when_created", "displayName", "name", "loginShell"],
         )
         .expect("LDAP error")
         .success()
@@ -42,10 +43,14 @@ pub fn ldap_search(username: &str) -> Option<LDAPUser> {
             .get("displayName")
             .expect("LDAP failed to get 'displayName' field")
             .join(""),
-        when_created: "".to_string() // result
+        when_created: "".to_string(), // result
             // .get("whenCreated")
             // .expect("LDAP failed to get 'whenCreated' field")
             // .join(""),
+        login_shell: result
+            .get("loginShell")
+            .expect("LDAP failed to get 'loginShell' field")
+            .join(""),
     })
 }
 

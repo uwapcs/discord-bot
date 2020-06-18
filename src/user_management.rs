@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 use regex::Regex;
 use serenity::{
-    model::{channel::Message, guild::Member},
+    model::{channel::Message, guild::Member, id::RoleId},
     prelude::*,
     utils::MessageBuilder,
 };
@@ -10,7 +10,7 @@ use url::Url;
 
 use crate::config::CONFIG;
 use crate::database;
-use crate::ldap::ldap_exists;
+use crate::ldap::{ldap_exists, ldap_search};
 use crate::token_management::*;
 
 pub fn new_member(ctx: &Context, mut new_member: Member) {
@@ -133,6 +133,55 @@ impl Commands {
             Err(why) => error!("Unable to send message with mutt {:?}", why),
         };
     }
+
+    pub fn get_registered_role(name: String) -> Option<u64> {
+        guard!(let Some(result) = ldap_search(&name) else {
+            return None
+        });
+        if result.login_shell.contains("locked")
+            && CONFIG.expired_member_role > 0 {
+            return Some(CONFIG.expired_member_role)
+        }
+        Some(CONFIG.registered_member_role)
+    }
+
+    // TODO: make this return a result
+    // NOTE: don't make this directly send messages, so it can be used for mass updates
+    pub fn update_registered_role(ctx: Context, msg: Message) {
+        guard!(let Ok(member_info) = database::get_member_info(&msg.author.id.0) else {
+            return // Err()
+        });
+        guard!(let Some(registered_role) = Commands::get_registered_role(member_info.username) else {
+            return // Err()
+        });
+        guard!(let Ok(mut discord_member) = serenity::model::id::GuildId(CONFIG.server_id)
+            .member(ctx.http.clone(), msg.author.id) else {
+            return // Err()
+        });
+
+        let roles_to_remove = vec![
+            CONFIG.registered_member_role,
+            CONFIG.unregistered_member_role,
+            CONFIG.expired_member_role];
+
+        for role in roles_to_remove {
+            if role == registered_role { // remove when vec.remove_item is stable
+                continue
+            }
+            if discord_member.roles.contains(&RoleId::from(role))
+                && discord_member.remove_role(&ctx.http, role).is_err() {
+                return // Err()
+            }
+        }
+
+        if !discord_member.roles.contains(&RoleId::from(registered_role))
+            && discord_member.add_role(&ctx.http, registered_role).is_err() {
+            return // Err()
+        }
+
+        // Ok()
+    }
+
     pub fn verify(ctx: Context, msg: Message, token: &str) {
         match parse_token(&msg.author, token) {
             Ok(name) => {
@@ -146,9 +195,13 @@ impl Commands {
                                 "Unable to remove role: {:?}",
                                 member.remove_role(&ctx.http, CONFIG.unregistered_member_role)
                             );
+                            guard!(let Some(member_role) = Commands::get_registered_role(name) else {
+                                send_message!(msg.channel_id, ctx.http.clone(), "Couldn't find you in LDAP!");
+                                return
+                            });
                             e!(
                                 "Unable to add role: {:?}",
-                                member.add_role(&ctx.http, CONFIG.registered_member_role)
+                                member.add_role(&ctx.http, member_role)
                             );
                             e!(
                                 "Unable to edit nickname: {:?}",

@@ -24,6 +24,7 @@ pub struct UccbotConfig {
     pub tiebreaker_role: u64,
     pub unregistered_member_role: u64,
     pub registered_member_role: u64,
+    pub expired_member_role: u64,
     pub command_prefix: String,
     pub for_vote: String,
     pub against_vote: String,
