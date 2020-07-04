@@ -5,12 +5,14 @@ announcement_channel: 264411219627212801 # committee
 readme_channel: 674252245008908298 # readme
 
 bot_id: 635407267881156618
+ical_url: "https://calendar.google.com/calendar/ical/rb44is9l4dftsnk6lmf1qske6g%40group.calendar.google.com/public/basic.ics"
 
 vote_pool_size: 8 # 4 exec + Fresher rep + 3 ocm
 vote_role: 269817189966544896 # @committee
 tiebreaker_role: 0 # No tiebreak apparently 635370432568098817 # @Presiding Presidenterino
 unregistered_member_role: 674641042464833548 # @unregistered
 registered_member_role: 692754285557055490 # @member
+expired_member_role: 692754285557055490 # @member
 
 command_prefix: "!"
 

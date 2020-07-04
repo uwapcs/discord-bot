@@ -2,6 +2,7 @@ server_id: 606351521117896704 # general
 main_channel: 606351521117896706 # the-corner
 welcome_channel: 606351613816209418 # general
 announcement_channel: 606351521117896706 # the-corner
+readme_channel: 606351613816209418 # general
 
 bot_id: 607078903969742848
 
@@ -10,6 +11,7 @@ vote_role: 607478818038480937 # Vote Role
 tiebreaker_role: 607509283483025409 # tie-breaker
 unregistered_member_role: 608282247350714408 # unregistered
 registered_member_role: 608282133118582815 # registered
+expired_member_role: 607479030370926613 # registered
 command_prefix: "!"
 
 for_vote: "👍"
