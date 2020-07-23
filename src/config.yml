@@ -1,18 +1,17 @@
-server_id: 606351521117896704
-#general
-main_channel: 606351521117896706
-#the-corner
-welcome_channel: 606351613816209418
-#general
-announcement_channel: 606351521117896706
+server_id: 0 #general
+main_channel: 0 #the-corner
+welcome_channel: 0 #general
+announcement_channel: 0 # announcements
+readme_channel: 0 # readme
 
-bot_id: 607078903969742848
+bot_id: 0
+ical_url: ""
 
-vote_pool_size: 2
-vote_role: 607478818038480937
-tiebreaker_role: 607509283483025409
-unregistered_member_role: 608282247350714408
-registered_member_role: 608282133118582815
+vote_pool_size: 0
+vote_role: 0
+tiebreaker_role: 0
+unregistered_member_role: 0
+registered_member_role: 0
 expired_member_role: 0
 command_prefix: "!"
 
@@ -22,3 +21,8 @@ abstain_vote: "🙊"
 approve_react: "⬆"
 disapprove_react: "⬇"
 unsure_react: "❔"
+
+react_role_messages:
+  - message: 0 # message ID
+    mapping:
+      react: 0 #role number

@@ -1,19 +1,19 @@
-#+TITLE:   UCC Discord Bot
+This is a general-purpose bot build for use on the PCS discord.
 
-This is a general-purpose bot build for use on the UCC discord.
+Code is based off of the [UCC bot](https://gitlab.ucc.asn.au/ucc/discord-bot).
 
-* Current features
+## Current features
 - Friendly welcome messages
 - Make polls
 - Pass circular motions
 - Assign roles based on reacts
 - Cowsay/fortune
-* (Hopefully) Upcoming features
-- LDAP/AD integration
-  - Sync roles with user groups
-  - Do stuff for/as users (e.g. dispense)
 
-#+BEGIN_SRC
+## (Hopefully) Upcoming features
+- [PCS site](pcs.org.au) integration
+  - Sync roles with user groups
+
+```
  _________________________________
 / Tonight's the night: Sleep in a \
 \ eucalyptus tree.                /
@@ -27,4 +27,4 @@ This is a general-purpose bot build for use on the UCC discord.
              |    |  ||   *
 
              Cower....
-#+END_SRC
+```

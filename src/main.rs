@@ -8,10 +8,6 @@ extern crate simplelog;
 #[macro_use]
 extern crate guard;
 
-#[macro_use]
-extern crate diesel;
-extern crate ldap3;
-
 extern crate reqwest;
 
 use simplelog::*;
@@ -22,13 +18,9 @@ use serenity::client::Client;
 #[macro_use]
 mod util;
 mod config;
-mod database;
-mod ical;
-mod ldap;
 mod reaction_roles;
 mod serenity_handler;
 mod token_management;
-mod user_management;
 mod voting;
 
 use config::SECRETS;
@@ -40,7 +32,7 @@ fn main() {
         WriteLogger::new(
             LevelFilter::Info,
             Config::default(),
-            File::create("ucc-bot.log").unwrap(),
+            File::create("discord-bot.log").unwrap(),
         ),
     ])
     .unwrap();

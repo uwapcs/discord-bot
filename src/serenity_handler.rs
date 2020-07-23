@@ -1,6 +1,6 @@
 use chrono::prelude::Utc;
 use serenity::{
-    model::{channel, channel::Message, gateway::Ready, guild::Member},
+    model::{channel, channel::Message, gateway::Ready},
     prelude::*,
     utils::MessageBuilder,
 };
@@ -8,11 +8,9 @@ use serenity::{
 use rand::seq::SliceRandom;
 
 use crate::config::CONFIG;
-use crate::ldap;
 use crate::reaction_roles::{
     add_role_by_reaction, remove_role_by_reaction, sync_all_role_reactions,
 };
-use crate::user_management;
 use crate::util::get_string_from_react;
 use crate::voting;
 
@@ -48,11 +46,6 @@ impl EventHandler for Handler {
         };
         match message_content[0] {
             "say" => println!("{:#?}", msg.content),
-            "register" => user_management::Commands::register(ctx, msg.clone(), content),
-            "verify" => user_management::Commands::verify(ctx, msg.clone(), content),
-            "profile" => user_management::Commands::profile(ctx, msg.clone(), content),
-            "set" => user_management::Commands::set_info(ctx, msg.clone(), content),
-            "clear" => user_management::Commands::clear_info(ctx, msg.clone(), content),
             "move" => voting::Commands::move_something(ctx, msg.clone(), content),
             "motion" => voting::Commands::motion(ctx, msg.clone(), content),
             "poll" => voting::Commands::poll(ctx, msg.clone(), content),
@@ -63,33 +56,17 @@ impl EventHandler for Handler {
                     "You want to look at my insides!? Eurgh.\nJust kidding, you can go over ",
                 );
                 mesg.push_italic("every inch");
-                mesg.push(" of me here: https://gitlab.ucc.asn.au/UCC/discord-bot 😉");
+                mesg.push(" of me here: https://github.com/uwapcs/discord-bot 😉");
                 send_message!(msg.channel_id, &ctx.http, mesg.build());
             }
             "help" => {
-                // Plaintext version, keep in case IRC users kick up a fuss
-                // let mut message = MessageBuilder::new();
-                // message.push_line(format!(
-                //     "Use {}move <action> to make a circular motion",
-                //     &CONFIG.command_prefix
-                // ));
-                // message.push_line(format!(
-                //     "Use {}poll <proposal> to see what people think about something",
-                //     &CONFIG.command_prefix
-                // ));
-                // send_message!(msg.channel_id, &ctx.http, message.build());
-
                 let result = msg.channel_id.send_message(&ctx.http, |m| {
                     m.embed(|embed| {
                         embed.colour(serenity::utils::Colour::DARK_GREY);
-                        embed.title("Commands for the UCC Bot");
-                        embed.field("About", "This is UCC's own little in-house bot, please treat it nicely :)", false);
+                        embed.title("Commands for the bot");
+                        embed.field("About", "This is a bot based off of UCC's in-house bot, please treat it nicely :)", false);
                         embed.field("Commitee", "`!move <text>` to make a circular motion\n\
                                                  `!poll <text>` to get people's opinions on something", false);
-                        embed.field("Account", "`!register <ucc username>` to link your Discord and UCC account\n\
-                                                `!profile <user>` to get the profile of a user\n\
-                                                `!set <bio|git|web|photo>` to set that property of _your_ profile\n\
-                                                `!updateroles` to update your registered roles", false);
                         embed.field("Fun", "`!cowsay <text>` to have a cow say your words\n\
                                             with no `<text>` it'll give you a fortune 😉", false);
                         embed
@@ -109,17 +86,6 @@ impl EventHandler for Handler {
                     "React to this to log the ID (for the next 5min)"
                 );
             }
-            "ldap" => send_message!(
-                msg.channel_id,
-                &ctx.http,
-                format!("{:?}", ldap::ldap_search(message_content[1]))
-            ),
-            "tla" => send_message!(
-                msg.channel_id,
-                &ctx.http,
-                format!("{:?}", ldap::tla_search(message_content[1]))
-            ),
-            "updateroles" => user_management::Commands::update_registered_role(ctx, msg),
             _ => send_message!(
                 msg.channel_id,
                 &ctx.http,
@@ -187,15 +153,6 @@ impl EventHandler for Handler {
             },
             Err(why) => error!("Failed to get react message {:?}", why),
         }
-    }
-
-    fn guild_member_addition(
-        &self,
-        ctx: Context,
-        _guild_id: serenity::model::id::GuildId,
-        the_new_member: Member,
-    ) {
-        user_management::new_member(&ctx, the_new_member);
     }
 
     // Set a handler to be called on the `ready` event. This is called when a

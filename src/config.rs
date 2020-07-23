@@ -6,13 +6,13 @@ use std::fs;
 
 lazy_static! {
     static ref CONFIG_FILE: String = fs::read_to_string("config.yml").unwrap();
-    pub static ref CONFIG: UccbotConfig = serde_yaml::from_str(&CONFIG_FILE).unwrap();
+    pub static ref CONFIG: BotConfig = serde_yaml::from_str(&CONFIG_FILE).unwrap();
     static ref SECRETS_FILE: String = fs::read_to_string("secrets.yml").unwrap();
-    pub static ref SECRETS: UccbotSecrets = serde_yaml::from_str(&SECRETS_FILE).unwrap();
+    pub static ref SECRETS: BotSecrets = serde_yaml::from_str(&SECRETS_FILE).unwrap();
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UccbotConfig {
+pub struct BotConfig {
     pub server_id: u64,
     pub main_channel: id::ChannelId,
     pub welcome_channel: id::ChannelId,
@@ -33,15 +33,9 @@ pub struct UccbotConfig {
     pub disapprove_react: String,
     pub unsure_react: String,
     pub react_role_messages: Vec<ReactionMapping>,
-    #[serde(default = "ldap_bind_address")]
-    pub bind_address: String,
 }
 
-pub fn ldap_bind_address() -> String {
-    "ldaps://samson.ucc.asn.au:636".to_string()
-}
-
-impl UccbotConfig {
+impl BotConfig {
     pub fn allowed_reacts(&self) -> Vec<String> {
         vec![
             self.for_vote.to_string(),
@@ -55,8 +49,7 @@ impl UccbotConfig {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UccbotSecrets {
-    pub ldap_pass: String,
+pub struct BotSecrets {
     pub discord_token: String,
 }
 

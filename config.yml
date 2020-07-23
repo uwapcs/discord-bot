@@ -1,0 +1,27 @@
+server_id: 709598806496247828
+main_channel: 709598806496247834 # general
+welcome_channel: 709598806496247831 # welcome-and-rules
+announcement_channel: 709598806496247832 # announcements
+readme_channel: 709598806496247831 # welcome-and-rules
+
+bot_id: 735736674025341010
+ical_url: "https://calendar.google.com/calendar/ical/uwapcs%40gmail.com/public/basic.ics"
+
+vote_pool_size: 8 # 4 exec + Fresher rep + 3 ocm
+vote_role: 709675983204122635 # committee
+tiebreaker_role: 735737621183070239 # president
+unregistered_member_role: 0 # @unregistered
+registered_member_role: 0 # @member
+expired_member_role: 0 # @member
+
+command_prefix: "!"
+
+for_vote: "👍"
+against_vote: "👎"
+abstain_vote: "🙊"
+approve_react: "⬆"
+disapprove_react: "⬇"
+unsure_react: "❔"
+
+react_role_messages:
+  - message: 709600566770401381
