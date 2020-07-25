@@ -105,3 +105,37 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           snapshot: true
           tag_names: true
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: publish
+    steps:
+      - name: Get code
+        uses: actions/checkout@v2
+      - name: Push config to server
+        uses: trendyminds/github-actions-rsync@master
+        with:
+          RSYNC_OPTIONS: -avzr --delete
+          RSYNC_TARGET: /root/config
+          RSYNC_SOURCE: config/
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_KEY }}
+          SSH_USERNAME: ${{ secrets.DEPLOY_USER }}
+          SSH_HOSTNAME: ${{ secrets.DEPLOY_ADDRESS }}
+      - name: Run docker on server
+        uses: appleboy/ssh-action@master
+        env:
+          SECRETS: ${{ secrets.SECRETS }}
+        with:
+          envs: SECRETS
+          host: ${{ secrets.DEPLOY_ADDRESS }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          script_stop: true
+          script: |
+            docker pull uwapcs/discord-bot:latest
+            docker create --volumes-from discord-bot -e SECRET=$SECRETS --name discord-bot-tmp uwapcs/discord-bot:latest
+            docker stop discord-bot
+            docker start discord-bot-tmp
+            docker rm discord-bot
+            docker rename discord-bot-tmp discord-bot
