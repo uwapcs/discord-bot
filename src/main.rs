@@ -28,7 +28,10 @@ use serenity_handler::Handler;
 
 fn main() {
     CombinedLogger::init(vec![
-        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap(),
+        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed).map_or_else(
+            || SimpleLogger::new(LevelFilter::Info, Config::default()) as Box<dyn SharedLogger>,
+            |x| x as Box<dyn SharedLogger>,
+        ),
         WriteLogger::new(
             LevelFilter::Info,
             Config::default(),
