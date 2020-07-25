@@ -21,7 +21,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            /usr/share/rust/.cargo/registry/
+            ~/.cargo/registry/
+            ~/.cargo/git
+            target
           key: ${{ hashFiles('Cargo.toml') }}-${{ matrix.rust }}
       - name: Build the bot
         uses: actions-rs/cargo@v1
@@ -50,10 +52,21 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-      - uses: actions/cache@v2
+      - name: Get release cache
+        uses: actions/cache@v2
         with:
           path: |
-            /usr/share/rust/.cargo/registry/
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ hashFiles('Cargo.toml') }}-release
+      - name: Get debug cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ hashFiles('Cargo.toml') }}-stable
       - name: Build in release mode
         uses: actions-rs/cargo@v1
