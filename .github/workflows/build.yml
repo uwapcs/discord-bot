@@ -133,7 +133,7 @@ jobs:
           script_stop: true
           script: |
             docker pull uwapcs/discord-bot:latest
-            docker create --volumes-from discord-bot -e SECRET=$SECRETS --name discord-bot-tmp uwapcs/discord-bot:latest
+            docker create --volumes-from discord-bot -e "SECRET=$SECRETS" --name discord-bot-tmp uwapcs/discord-bot:latest
             docker stop discord-bot
             docker start discord-bot-tmp
             docker rm discord-bot
