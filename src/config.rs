@@ -4,7 +4,7 @@ use serenity::model::id;
 use std::{env, fs};
 
 lazy_static! {
-    static ref CONFIG_FILE: String = fs::read_to_string("config/config.yml").unwrap();
+    static ref CONFIG_FILE: String = fs::read_to_string("./config/config.yml").unwrap();
     pub static ref CONFIG: BotConfig = serde_yaml::from_str(&CONFIG_FILE).unwrap();
     static ref SECRET_ENV: String = env::var("SECRET").unwrap();
     pub static ref SECRETS: BotSecrets = serde_yaml::from_str(&SECRET_ENV).unwrap();
