@@ -1,5 +1,5 @@
 FROM debian:stretch-slim
-COPY target/debug/discord-bot /usr/bin
+COPY target/release/discord-bot /usr/bin
 RUN apt-get update && apt-get install -y libssl1.1
 
 RUN mkdir -p /bot/config
