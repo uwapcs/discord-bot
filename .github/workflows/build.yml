@@ -18,6 +18,11 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           components: rustfmt, clippy
+      - uses: actions/cache@v2
+        with:
+          path: |
+            /usr/share/rust/.cargo/cache
+          key: ${{ hashFiles('Cargo.toml') }}-${{ matrix.rust }}
       - name: Build the bot
         uses: actions-rs/cargo@v1
         with:
@@ -39,11 +44,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        id: toolchain
         with:
           profile: minimal
           toolchain: stable
           override: true
           components: rustfmt, clippy
+      - uses: actions/cache@v2
+        with:
+          path: |
+            /usr/share/rust/.cargo/cache
+          key: ${{ hashFiles('Cargo.toml') }}-stable
       - name: Build in release mode
         uses: actions-rs/cargo@v1
         with:
@@ -54,7 +65,7 @@ jobs:
         with:
           path: |
             target/release/
-          key: ${{ github.ref }}
+          key: ${{ github.sha }}
 
   publish:
     runs-on: ubuntu-latest
@@ -65,7 +76,7 @@ jobs:
         with:
           path: |
             target/release/
-          key: ${{ github.ref }}
+          key: ${{ github.sha }}
       - uses: mattdavis0351/actions/docker-gpr@1.3.1
         if: steps.cache.outputs.cache-hit == 'true'
         with:
