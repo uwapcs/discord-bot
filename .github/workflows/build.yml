@@ -21,7 +21,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            /usr/share/rust/.cargo/registry/cache/
+            /usr/share/rust/.cargo/registry/
           key: ${{ hashFiles('Cargo.toml') }}-${{ matrix.rust }}
       - name: Build the bot
         uses: actions-rs/cargo@v1
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            /usr/share/rust/.cargo/registry/cache/
+            /usr/share/rust/.cargo/registry/
           key: ${{ hashFiles('Cargo.toml') }}-stable
       - name: Build in release mode
         uses: actions-rs/cargo@v1
