@@ -15,7 +15,7 @@ impl Commands {
         let motion = content;
         if !motion.is_empty() {
             create_motion(&ctx, &msg, motion);
-            return
+            return;
         }
         send_message!(
             msg.channel_id,
@@ -34,7 +34,7 @@ impl Commands {
         let topic = content;
         if !topic.is_empty() {
             create_poll(&ctx, &msg, topic);
-            return
+            return;
         }
         send_message!(
             msg.channel_id,
@@ -193,7 +193,7 @@ fn get_cached_motion(ctx: &Context, msg: &Message) -> MotionInfo {
 fn set_cached_motion(id: serenity::model::id::MessageId, motion_info: MotionInfo) {
     if let Some(motion) = MOTIONS_CACHE.lock().unwrap().get_mut(&id) {
         *motion = motion_info;
-        return
+        return;
     }
     warn!("{}", "Couldn't find motion in cache to set");
 }
@@ -208,7 +208,7 @@ macro_rules! tiebreaker {
         } else {
             0.0
         }
-    }
+    };
 }
 
 fn update_motion(
@@ -225,8 +225,10 @@ fn update_motion(
     let abstain_votes = motion_info.votes.get(&CONFIG.abstain_vote).unwrap().len() as isize - 1;
 
     let for_strength = for_votes as f32 + tiebreaker!(ctx, &CONFIG.for_vote, motion_info);
-    let against_strength = against_votes as f32 + tiebreaker!(ctx, &CONFIG.against_vote, motion_info);
-    let abstain_strength = abstain_votes as f32 + tiebreaker!(ctx, &CONFIG.abstain_vote, motion_info);
+    let against_strength =
+        against_votes as f32 + tiebreaker!(ctx, &CONFIG.against_vote, motion_info);
+    let abstain_strength =
+        abstain_votes as f32 + tiebreaker!(ctx, &CONFIG.abstain_vote, motion_info);
 
     let old_embed = msg.embeds[0].clone();
     let topic = old_embed.clone().title.unwrap();
