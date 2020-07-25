@@ -18,14 +18,17 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           components: rustfmt, clippy
-      - uses: actions-rs/cargo@v1
+      - name: Build the bot
+        uses: actions-rs/cargo@v1
         with:
           command: build
-      - uses: actions-rs/cargo@v1
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
-      - uses: actions-rs/cargo@v1
+      - name: Run clippy
+        uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
@@ -41,7 +44,8 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-      - uses: actions-rs/cargo@v1
+      - name: Build in release mode
+        uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release
