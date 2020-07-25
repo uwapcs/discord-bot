@@ -105,7 +105,7 @@ pub fn sync_all_role_reactions(ctx: &Context) {
             );
             for illegal_react_user in &message
                 .reaction_users(&ctx.http, react.reaction_type.clone(), Some(100), None)
-                .unwrap_or(vec![])
+                .unwrap_or_default()
             {
                 message
                     .channel_id

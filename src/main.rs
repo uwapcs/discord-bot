@@ -20,7 +20,6 @@ mod util;
 mod config;
 mod reaction_roles;
 mod serenity_handler;
-mod token_management;
 mod voting;
 
 use config::SECRETS;
