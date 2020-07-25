@@ -99,13 +99,9 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if add_reaction.user_id.0 != CONFIG.bot_id => {
                     add_role_by_reaction(&ctx, message, add_reaction);
-                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
-                    || add_reaction.user_id == CONFIG.bot_id =>
-                {
-                    return
-                }
+                    || add_reaction.user_id == CONFIG.bot_id => {}
                 MessageType::Motion => voting::reaction_add(ctx, add_reaction),
                 MessageType::LogReact => {
                     let react_user = add_reaction.user(&ctx).unwrap();
@@ -141,13 +137,9 @@ impl EventHandler for Handler {
             Ok(message) => match get_message_type(&message) {
                 MessageType::RoleReactMessage if removed_reaction.user_id != CONFIG.bot_id => {
                     remove_role_by_reaction(&ctx, message, removed_reaction);
-                    return;
                 }
                 _ if message.author.id.0 != CONFIG.bot_id
-                    || removed_reaction.user_id == CONFIG.bot_id =>
-                {
-                    return
-                }
+                    || removed_reaction.user_id == CONFIG.bot_id => {}
                 MessageType::Motion => voting::reaction_remove(ctx, removed_reaction),
                 _ => {}
             },

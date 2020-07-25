@@ -1,6 +1,5 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
-use serde_yaml;
 use serenity::model::id;
 use std::{env, fs};
 
