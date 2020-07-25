@@ -113,15 +113,14 @@ jobs:
       - name: Get code
         uses: actions/checkout@v2
       - name: Push config to server
-        uses: trendyminds/github-actions-rsync@master
+        uses: burnett01/rsync-deployments@4.1
         with:
-          RSYNC_OPTIONS: -avzr --delete
-          RSYNC_TARGET: /root/config
-          RSYNC_SOURCE: config/
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_KEY }}
-          SSH_USERNAME: ${{ secrets.DEPLOY_USER }}
-          SSH_HOSTNAME: ${{ secrets.DEPLOY_ADDRESS }}
+          switches: -avzr --delete
+          path: config/
+          remote_path: /root/config
+          remote_host: ${{ secrets.DEPLOY_ADDRESS }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.SERVER_KEY }}
       - name: Run docker on server
         uses: appleboy/ssh-action@master
         env:
