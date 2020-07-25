@@ -8,7 +8,8 @@ RUN cargo install --path . --force
 
 FROM debian:stretch-slim
 COPY --from=builder /usr/local/cargo/bin/discord-bot /usr/bin
-RUN apt-get update && apt-get install libssl1.1
+RUN apt-get update && apt-get install libssl1.1 cowsay
+RUN cp /usr/games/cowsay /usr/bin
 
 RUN mkdir -p /bot/config
 VOLUME /bot/config
