@@ -56,10 +56,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "User {}#{:4} tried to call non-existant command {}",
                     msg.author.name, msg.author.discriminator, command_name
                 );
-                if let Err(_) =
-                    send_message!(msg.channel_id, &ctx.http, "Unrecognised command. Try !help")
-                {
-                };
+                send_message!(msg.channel_id, &ctx.http, "Unrecognised command. Try !help")
+                    .map(|_| ())
+                    .or(<Result<(), &dyn std::error::Error>>::Ok(()))
+                    .unwrap();
             })
             .prefix_only(|ctx, msg| helpers::sassy(ctx, msg))
             .normal_message(|ctx, msg| {

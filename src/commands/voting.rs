@@ -82,44 +82,43 @@ fn motion(ctx: &mut Context, msg: &Message, _: Args) -> CommandResult {
 /// Get people's opinions on something
 fn poll(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     info!("{} created a poll {}", msg.author.name, args.rest());
-    Ok(
-        match msg.channel_id.send_message(&ctx.http, |m| {
-            m.embed(|embed| {
-                embed.author(|a| {
-                    a.name(&msg.author.name);
-                    a.icon_url(
-                        msg.author
-                            .static_avatar_url()
-                            .expect("Expected author to have avatar"),
-                    );
-                    a
-                });
-                embed.colour(serenity::utils::Colour::BLUE);
-                embed.title(format!("Poll {}", args.rest()));
-                let mut desc = MessageBuilder::new();
-                desc.mention(&msg.author);
-                desc.push(" wants to know what you think.");
-                embed.description(desc.build());
-                embed.timestamp(msg.timestamp.to_rfc3339());
-                embed
+    match msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|embed| {
+            embed.author(|a| {
+                a.name(&msg.author.name);
+                a.icon_url(
+                    msg.author
+                        .static_avatar_url()
+                        .expect("Expected author to have avatar"),
+                );
+                a
             });
-            m.reactions(vec![
-                CONFIG.approve_react.to_string(),
-                CONFIG.disapprove_react.to_string(),
-                CONFIG.unsure_react.to_string(),
-            ]);
-            m
-        }) {
-            Err(why) => {
-                error!("Error sending message: {:?}", why);
+            embed.colour(serenity::utils::Colour::BLUE);
+            embed.title(format!("Poll {}", args.rest()));
+            let mut desc = MessageBuilder::new();
+            desc.mention(&msg.author);
+            desc.push(" wants to know what you think.");
+            embed.description(desc.build());
+            embed.timestamp(msg.timestamp.to_rfc3339());
+            embed
+        });
+        m.reactions(vec![
+            CONFIG.approve_react.to_string(),
+            CONFIG.disapprove_react.to_string(),
+            CONFIG.unsure_react.to_string(),
+        ]);
+        m
+    }) {
+        Err(why) => {
+            error!("Error sending message: {:?}", why);
+        }
+        Ok(_) => {
+            if let Err(why) = msg.delete(ctx) {
+                error!("Error deleting motion prompt: {:?}", why);
             }
-            Ok(_) => {
-                if let Err(why) = msg.delete(ctx) {
-                    error!("Error deleting motion prompt: {:?}", why);
-                }
-            }
-        },
-    )
+        }
+    };
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -232,8 +231,10 @@ fn update_motion(
             message.push(" is now ");
             message.push_bold(status);
             message.push_italic(format!(" (was {})", last_status));
-            if let Err(_) = send_message!(CONFIG.announcement_channel, &ctx.http, message.build()) {
-            }
+            send_message!(CONFIG.announcement_channel, &ctx.http, message.build())
+                .map(|_| ())
+                .or(<Result<(), &dyn std::error::Error>>::Ok(()))
+                .unwrap();
         }
     };
 
