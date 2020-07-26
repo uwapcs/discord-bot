@@ -25,7 +25,7 @@ mod voting;
 use config::SECRETS;
 use serenity_handler::Handler;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     CombinedLogger::init(vec![
         TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed).map_or_else(
             || SimpleLogger::new(LevelFilter::Info, Config::default()) as Box<dyn SharedLogger>,
@@ -36,8 +36,7 @@ fn main() {
             Config::default(),
             File::create("discord-bot.log").unwrap(),
         ),
-    ])
-    .unwrap();
+    ])?;
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
@@ -48,7 +47,5 @@ fn main() {
     //
     // Shards will automatically attempt to reconnect, and will perform
     // exponential backoff until it reconnects.
-    if let Err(why) = client.start() {
-        error!("Client error: {:?}", why);
-    }
+    Ok(client.start()?)
 }
