@@ -25,3 +25,16 @@ unsure_react: "❔"
 
 react_role_messages:
   - message: 709600566770401381
+
+mention_responses:
+  - "Oh hello there"
+  - "Stop bothering me. I'm busy."
+  - "You know, I'm trying to keep track of this place. I don't need any more distractions."
+  - "Don't you have better things to do?"
+  - "(sigh) what now?"
+  - "Yes, yes, I know I'm brilliant"
+  - "What do I need to do to catch a break around here? Eh."
+  - "Mmmmhmmm. I'm still around, don't mind me."
+  - "You know, some people would consider this rude. Luckily I'm not one of those people. In fact, I'm not even a person."
+  - "Perhaps try bothering someone else for a change."
+
