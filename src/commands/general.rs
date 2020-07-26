@@ -2,7 +2,7 @@ use serenity::framework::standard::{macros::*, *};
 use serenity::{model::channel::Message, prelude::*, utils::*};
 
 #[group]
-#[commands(source)]
+#[commands(say, source)]
 struct General;
 
 #[command]
