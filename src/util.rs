@@ -35,10 +35,10 @@ macro_rules! e {
 #[macro_use]
 macro_rules! send_message {
     ($chan:expr, $context:expr, $message:expr) => {
-        match $chan.say($context, $message) {
-            Ok(_) => (),
-            Err(why) => error!("Error sending message: {:?}", why),
-        }
+        $chan.say($context, $message).map_err(|why| {
+            error!("Error sending message: {:?}", why);
+            why
+        })
     };
 }
 

@@ -1,99 +1,18 @@
-use chrono::prelude::Utc;
 use serenity::{
-    model::{channel, channel::Message, gateway::Ready},
+    model::{channel, gateway::Ready},
     prelude::*,
-    utils::MessageBuilder,
 };
 
-use rand::seq::SliceRandom;
-
+use crate::commands::voting;
 use crate::config::CONFIG;
+use crate::helpers::*;
 use crate::reaction_roles::{
     add_role_by_reaction, remove_role_by_reaction, sync_all_role_reactions,
 };
-use crate::util::get_string_from_react;
-use crate::voting;
 
 pub struct Handler;
 
 impl EventHandler for Handler {
-    // Set a handler for the `message` event - so that whenever a new message
-    // is received - the closure (or function) passed will be called.
-    //
-    // Event handlers are dispatched through a threadpool, and so multiple
-    // events can be dispatched simultaneously.
-    fn message(&self, ctx: Context, msg: Message) {
-        if !(msg.content.starts_with(&CONFIG.command_prefix)) {
-            if msg.content.contains(&format!("<@!{}>", CONFIG.bot_id)) // desktop mentions
-                || msg.content.contains(&format!("<@{}>", CONFIG.bot_id))
-            // mobile mentions
-            {
-                send_message!(
-                    msg.channel_id,
-                    &ctx.http,
-                    MENTION_RESPONSES
-                        .choose(&mut rand::thread_rng())
-                        .expect("We couldn't get any sass")
-                );
-            }
-            return;
-        }
-        let message_content: Vec<_> = msg.content[1..].splitn(2, ' ').collect();
-        let content = if message_content.len() > 1 {
-            message_content[1]
-        } else {
-            ""
-        };
-        match message_content[0] {
-            "say" => println!("{:#?}", msg.content),
-            "move" => voting::Commands::move_something(ctx, msg.clone(), content),
-            "motion" => voting::Commands::motion(ctx, msg.clone(), content),
-            "poll" => voting::Commands::poll(ctx, msg.clone(), content),
-            "cowsay" => voting::Commands::cowsay(ctx, msg.clone(), content),
-            "source" => {
-                let mut mesg = MessageBuilder::new();
-                mesg.push(
-                    "You want to look at my insides!? Eurgh.\nJust kidding, you can go over ",
-                );
-                mesg.push_italic("every inch");
-                mesg.push(" of me here: https://github.com/uwapcs/discord-bot 😉");
-                send_message!(msg.channel_id, &ctx.http, mesg.build());
-            }
-            "help" => {
-                let result = msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|embed| {
-                        embed.colour(serenity::utils::Colour::DARK_GREY);
-                        embed.title("Commands for the bot");
-                        embed.field("About", "This is a bot based off of UCC's in-house bot, please treat it nicely :)", false);
-                        embed.field("Commitee", "`!move <text>` to make a circular motion\n\
-                                                 `!poll <text>` to get people's opinions on something", false);
-                        embed.field("Fun", "`!cowsay <text>` to have a cow say your words\n\
-                                            with no `<text>` it'll give you a fortune 😉", false);
-                        embed
-                    });
-                    m
-                });
-                if let Err(why) = result {
-                    error!("Error sending help embed: {:?}", why);
-                }
-            }
-            // undocumented (in !help) functins
-            "logreact" => {
-                e!("Error deleting logreact prompt: {:?}", msg.delete(&ctx));
-                send_message!(
-                    msg.channel_id,
-                    &ctx.http,
-                    "React to this to log the ID (for the next 5min)"
-                );
-            }
-            _ => send_message!(
-                msg.channel_id,
-                &ctx.http,
-                format!("Unrecognised command. Try {}help", &CONFIG.command_prefix)
-            ),
-        }
-    }
-
     fn reaction_add(&self, ctx: Context, add_reaction: channel::Reaction) {
         match add_reaction.message(&ctx.http) {
             Ok(message) => match get_message_type(&message) {
@@ -103,29 +22,6 @@ impl EventHandler for Handler {
                 _ if message.author.id.0 != CONFIG.bot_id
                     || add_reaction.user_id == CONFIG.bot_id => {}
                 MessageType::Motion => voting::reaction_add(ctx, add_reaction),
-                MessageType::LogReact => {
-                    let react_user = add_reaction.user(&ctx).unwrap();
-                    let react_as_string = get_string_from_react(&add_reaction.emoji);
-                    if Utc::now().timestamp() - message.timestamp.timestamp() > 300 {
-                        warn!(
-                            "The logreact message {} just tried to use is too old",
-                            react_user.name
-                        );
-                        return;
-                    }
-                    info!(
-                        "The react {} just added is {:?}. In full: {:?}",
-                        react_user.name, react_as_string, add_reaction.emoji
-                    );
-                    let mut msg = MessageBuilder::new();
-                    msg.push_italic(react_user.name);
-                    msg.push(format!(
-                        " wanted to know that {} is represented by ",
-                        add_reaction.emoji,
-                    ));
-                    msg.push_mono(react_as_string);
-                    send_message!(message.channel_id, &ctx.http, msg.build());
-                }
                 _ => {}
             },
             Err(why) => error!("Failed to get react message {:?}", why),
@@ -160,54 +56,5 @@ impl EventHandler for Handler {
 
     fn resume(&self, ctx: Context, _: serenity::model::event::ResumedEvent) {
         sync_all_role_reactions(&ctx);
-    }
-}
-
-pub const MENTION_RESPONSES: &[&str] = &[
-    "Oh hello there",
-    "Stop bothering me. I'm busy.",
-    "You know, I'm trying to keep track of this place. I don't need any more distractions.",
-    "Don't you have better things to do?",
-    "(sigh) what now?",
-    "Yes, yes, I know I'm brilliant",
-    "What do I need to do to catch a break around here? Eh.",
-    "Mmmmhmmm. I'm still around, don't mind me.",
-    "You know, some people would consider this rude. Luckily I'm not one of those people. In fact, I'm not even a person.",
-    "Perhaps try bothering someone else for a change."
-];
-
-#[derive(Debug, PartialEq)]
-enum MessageType {
-    Motion,
-    Role,
-    RoleReactMessage,
-    LogReact,
-    Poll,
-    Misc,
-}
-
-fn get_message_type(message: &Message) -> MessageType {
-    if CONFIG
-        .react_role_messages
-        .iter()
-        .any(|rrm| rrm.message == message.id)
-    {
-        return MessageType::RoleReactMessage;
-    }
-    if message.embeds.is_empty() {
-        // Get first word of message
-        return match message.content.splitn(2, ' ').next().unwrap() {
-            "Role" => MessageType::Role,
-            "React" => MessageType::LogReact,
-            _ => MessageType::Misc,
-        };
-    }
-    let title: String = message.embeds[0].title.clone().unwrap();
-    let words_of_title: Vec<_> = title.splitn(2, ' ').collect();
-    let first_word_of_title = words_of_title[0];
-    match first_word_of_title {
-        "Motion" => MessageType::Motion,
-        "Poll" => MessageType::Poll,
-        _ => MessageType::Misc,
     }
 }

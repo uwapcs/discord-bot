@@ -32,6 +32,7 @@ pub struct BotConfig {
     pub disapprove_react: String,
     pub unsure_react: String,
     pub react_role_messages: Vec<ReactionMapping>,
+    pub mention_responses: Option<Vec<String>>,
 }
 
 impl BotConfig {
