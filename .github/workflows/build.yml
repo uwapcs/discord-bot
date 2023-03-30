@@ -97,7 +97,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: discord-bot
           tag: latest
-      - uses: elgohr/Publish-Docker-Github-Action@master
+      - uses: elgohr/Publish-Docker-Github-Action@v5
         if: steps.cache.outputs.cache-hit == 'true'
         with:
           name: uwapcs/discord-bot
